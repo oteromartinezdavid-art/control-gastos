@@ -6,19 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('ingresos', function (Blueprint $table) {
+        Schema::create('categoria_gastos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('fuente_ingreso_id')->constrained('fuente_ingresos')->onDelete('cascade');
-            $table->string('descripcion');
-            $table->decimal('monto', 10, 2);
-            $table->date('fecha');
+            $table->string('nombre');
+            $table->decimal('presupuesto_mensual', 10, 2)->default(0);
+            $table->string('color')->default('#1e1b4b'); // Color para los gráficos
             $table->timestamps();
+            
+            // Evitamos que un usuario tenga dos categorías con el mismo nombre
+            $table->unique(['user_id', 'nombre']);
         });
     }
 
@@ -27,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ingresos');
+        Schema::dropIfExists('categoria_gastos');
     }
 };

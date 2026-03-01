@@ -3,6 +3,28 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Mi Control de Gastos') }}
         </h2>
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-6">
+            <div class="flex items-center justify-between bg-white p-4 shadow-sm sm:rounded-lg border-l-4 border-red-500">
+                {{-- Botón Mes Anterior --}}
+                <a href="{{ route('gastos.index', ['mes' => $fechaObjeto->copy()->subMonth()->month, 'anio' => $fechaObjeto->copy()->subMonth()->year]) }}" 
+                class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-bold text-gray-700 transition">
+                    ← {{ ucfirst($fechaObjeto->copy()->subMonth()->translatedFormat('F')) }}
+                </a>
+                
+                {{-- Título Mes Actual --}}
+                <div class="text-center">
+                    <h3 class="text-lg font-black text-gray-800 uppercase tracking-widest">
+                        {{ $fechaObjeto->translatedFormat('F Y') }}
+                    </h3>
+                </div>
+
+                {{-- Botón Mes Siguiente --}}
+                <a href="{{ route('gastos.index', ['mes' => $fechaObjeto->copy()->addMonth()->month, 'anio' => $fechaObjeto->copy()->addMonth()->year]) }}" 
+                class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-bold text-gray-700 transition">
+                    {{ ucfirst($fechaObjeto->copy()->addMonth()->translatedFormat('F')) }} →
+                </a>
+            </div>
+        </div>
     </x-slot>
 
     <div class="py-12">
@@ -22,11 +44,10 @@
                     </div>
                     <div>
                         <x-input-label for="categoria" value="Categoría" />
-                        <select name="categoria" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                            <option value="Comida">Comida</option>
-                            <option value="Transporte">Transporte</option>
-                            <option value="Ocio">Ocio</option>
-                            <option value="Vivienda">Vivienda</option>
+                        <select name="categoria_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            @foreach($categorias as $cat)
+                                <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div>
@@ -58,7 +79,7 @@
                             <td class="py-3 font-semibold">{{ $gasto->descripcion }}</td>
                             <td class="py-3">
                                 <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                                    {{ $gasto->categoria }}
+                                    {{ $gasto->categoriaGasto->nombre ?? 'Sin categoría' }}
                                 </span>
                             </td>
                             <td class="py-3 text-right font-bold text-red-600">${{ number_format($gasto->monto, 2) }}</td>

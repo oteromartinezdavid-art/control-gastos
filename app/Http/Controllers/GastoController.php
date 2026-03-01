@@ -4,23 +4,60 @@ namespace App\Http\Controllers;
 
 use App\Models\Gasto;
 use Illuminate\Http\Request;
+use App\Models\CategoriaGasto; 
+use App\Models\FuenteIngreso;  
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class GastoController extends Controller
 {
     // Mostrar la lista de gastos del usuario
-   public function index()
+    public function index(Request $request) // Asegúrate de recibir $request
     {
-        $gastos = Gasto::where('user_id', Auth::id())->orderBy('fecha', 'desc')->get();
-        $total = $gastos->sum('monto');
+        $user_id = auth()->id();
 
-        // Agrupamos por categoría y sumamos el monto de cada una para el gráfico
-        $gastosPorCategoria = Gasto::where('user_id', Auth::id())
-            ->selectRaw('categoria, SUM(monto) as total')
-            ->groupBy('categoria')
+        // 1. Detectar el mes y año de la URL o usar el actual por defecto
+        $mesActual = $request->get('mes', now()->month);
+        $anioActual = $request->get('anio', now()->year);
+
+        // 2. Crear un objeto Carbon para facilitar la navegación y el título en la vista
+        $fechaObjeto = \Carbon\Carbon::create($anioActual, $mesActual, 1);
+
+        // 3. Listado filtrado por el mes seleccionado
+        $gastos = Gasto::with('categoriaGasto') // Cargamos la relación
+            ->where('user_id', $user_id)
+            ->whereMonth('fecha', $mesActual)
+            ->whereYear('fecha', $anioActual)
+            ->orderBy('fecha', 'desc')
             ->get();
 
-        return view('gastos.index', compact('gastos', 'total', 'gastosPorCategoria'));
+        // 4. El total sumará solo los gastos de ese mes específico
+        $total = $gastos->sum('monto');
+
+        // 5. Gráfico filtrado por mes seleccionado
+        $gastosPorCategoria = Gasto::where('gastos.user_id', $user_id)
+            ->whereMonth('gastos.fecha', $mesActual)
+            ->whereYear('gastos.fecha', $anioActual)
+            ->join('categoria_gastos', 'gastos.categoria_id', '=', 'categoria_gastos.id')
+            ->select('categoria_gastos.nombre as categoria', \DB::raw('SUM(monto) as total'))
+            ->groupBy('categoria_gastos.nombre')
+            ->get();
+
+        // 6. Categorías para el desplegable (disponibles siempre)
+        $categorias = CategoriaGasto::where('user_id', $user_id)
+            ->orderBy('nombre')
+            ->get();
+        
+        // Pasamos las nuevas variables 'mes', 'anio' y 'fechaObjeto' a la vista
+        return view('gastos.index', compact(
+            'gastos', 
+            'total', 
+            'gastosPorCategoria', 
+            'categorias', 
+            'mesActual', 
+            'anioActual', 
+            'fechaObjeto'
+        ));
     }
 
     /**
@@ -37,19 +74,19 @@ class GastoController extends Controller
         $request->validate([
             'descripcion' => 'required|string|max:255',
             'monto' => 'required|numeric',
-            'categoria' => 'required|string',
+            'categoria_id' => 'required|exists:categoria_gastos,id', // Validamos que el ID existe
             'fecha' => 'required|date',
         ]);
 
         Gasto::create([
-            'user_id' => Auth::id(),
+            'user_id' => auth()->id(),
             'descripcion' => $request->descripcion,
             'monto' => $request->monto,
-            'categoria' => $request->categoria,
+            'categoria_id' => $request->categoria_id, // Guardamos el ID
             'fecha' => $request->fecha,
         ]);
 
-        return redirect()->route('gastos.index')->with('success', 'Gasto guardado correctamente');
+        return redirect()->back()->with('success', 'Gasto guardado correctamente');
     }
 
     /**

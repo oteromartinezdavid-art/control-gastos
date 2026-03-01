@@ -3,6 +3,23 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Mi Control de Ingresos') }}
         </h2>
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-6">
+            <div class="flex items-center justify-between bg-white p-4 shadow-sm sm:rounded-lg">
+                <a href="{{ route('ingresos.index', ['mes' => $fechaObjeto->copy()->subMonth()->month, 'anio' => $fechaObjeto->copy()->subMonth()->year]) }}" 
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-bold">
+                    ← {{ ucfirst($fechaObjeto->copy()->subMonth()->translatedFormat('F')) }}
+                </a>
+                
+                <h3 class="text-xl font-bold text-indigo-900 uppercase">
+                    {{ $fechaObjeto->translatedFormat('F Y') }}
+                </h3>
+
+                <a href="{{ route('ingresos.index', ['mes' => $fechaObjeto->copy()->addMonth()->month, 'anio' => $fechaObjeto->copy()->addMonth()->year]) }}" 
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-bold">
+                    {{ ucfirst($fechaObjeto->copy()->addMonth()->translatedFormat('F')) }} →
+                </a>
+            </div>
+        </div>
     </x-slot>
 
     <div class="py-12">
@@ -21,13 +38,12 @@
                         <x-text-input id="monto" name="monto" type="number" step="0.01" class="mt-1 block w-full" required />
                     </div>
                     <div>
-                        <x-input-label for="fuente" value="Fuente" />
-                        <select name="fuente" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                            <option value="nomina_david">Nómina David</option>
-                            <option value="nomina_emi">Nómina Emi</option>
-                            <option value="dividendos_acciones">Dividendos acciones</option>
-                            <option value="venta_acciones">Venta de acciones</option>
-                            <option value="otros">Otros</option>
+                        <x-input-label for="fuente_ingreso_id" value="Fuente" />
+                        <select name="fuente_ingreso_id" id="fuente_ingreso_id" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                            <option value="">Selecciona una fuente</option>
+                            @foreach($fuentes as $f)
+                                <option value="{{ $f->id }}">{{ $f->nombre }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div>
@@ -40,34 +56,41 @@
                 </form>
             </div>
 
+            <div class="bg-white p-6 shadow-sm sm:rounded-lg mb-6">
+                <h3 class="text-lg font-medium mb-4 text-center">Ingresos por Fuente</h3>
+                <div style="max-width: 300px; margin: auto;">
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-medium mb-4">Historial de Ingresos</h3>
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-[#f8fafc] text-[#1e1b4b] border-b-2 border-[#f97316]">
-                        <tr class="border-b">
-                            <th class="py-2">Fecha</th>
-                            <th class="py-2">Descripción</th>
-                            <th class="py-2">Fuente</th>
-                            <th class="py-2 text-right">Monto</th>
-                            <th class="py-2 text-center">Acciones</th>
+                        <tr>
+                            <th class="px-4 py-2">Fecha</th>
+                            <th class="px-4 py-2">Descripción</th>
+                            <th class="px-4 py-2">Fuente</th>
+                            <th class="px-4 py-2 text-right">Monto</th>
+                            <th class="px-4 py-2 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($ingresos as $gasto)
+                        @foreach($ingresos as $ingreso)
                         <tr class="border-b hover:bg-gray-50">
-                            <td class="py-3">{{ $gasto->fecha }}</td>
-                            <td class="py-3 font-semibold">{{ $gasto->descripcion }}</td>
-                            <td class="py-3">
+                            <td class="px-4 py-3">{{ $ingreso->fecha }}</td>
+                            <td class="px-4 py-3 font-semibold">{{ $ingreso->descripcion }}</td>
+                            <td class="px-4 py-3">
                                 <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                                    {{ $gasto->fuente }}
+                                    {{ $ingreso->fuenteIngreso->nombre ?? 'N/A' }}
                                 </span>
                             </td>
-                            <td class="py-3 text-right font-bold text-green-600">${{ number_format($gasto->monto, 2) }}</td>
-                            <td class="py-3 text-center">
-                                <form action="{{ route('ingresos.destroy', $gasto) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este gasto?')">
+                            <td class="px-4 py-3 text-right font-bold text-green-600">${{ number_format($ingreso->monto, 2) }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <form action="{{ route('ingresos.destroy', $ingreso) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este ingreso?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-green-600 hover:text-green-900 font-medium">
+                                    <button type="submit" class="text-red-600 hover:text-red-900 font-medium">
                                         Eliminar
                                     </button>
                                 </form>
@@ -75,10 +98,11 @@
                         </tr>
                         @endforeach
                         <tr class="bg-green-50 font-bold">
-                            <td colspan="4" class="py-3 text-right">TOTAL INGRESOS:</td>
-                            <td class="py-3 text-right text-green-700 text-xl">
+                            <td colspan="3" class="px-4 py-3 text-right">TOTAL INGRESOS:</td>
+                            <td class="px-4 py-3 text-right text-green-700 text-xl">
                                 ${{ number_format($total_ingresos, 2) }}
                             </td>
+                            <td></td>
                         </tr>
                     </tbody>
                 </table>
@@ -86,32 +110,27 @@
 
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-6">
-        <div class="bg-white p-6 shadow-sm sm:rounded-lg">
-            <h3 class="text-lg font-medium mb-4 text-center">Ingresos por Fuente</h3>
-            <div style="max-width: 300px; margin: auto;">
-                <canvas id="myChart"></canvas>
-            </div>
-        </div>
-    </div>
     <script>
         const ctx = document.getElementById('myChart');
-        
-        // Convertimos los datos de PHP a JavaScript
-        const datos = @json($ingresosPorCategoria);
+        const datos = @json($ingresosPorFuente);
         
         new Chart(ctx, {
             type: 'pie',
             data: {
-                labels: datos.map(item => item.fuente),
+                labels: datos.map(item => item.fuente_nombre),
                 datasets: [{
-                    label: 'Total Gastado',
+                    label: 'Total Ingresado',
                     data: datos.map(item => item.total),
-                    backgroundColor: [
-                        '#4F46E5', '#EF4444', '#10B981', '#F59E0B', '#6366F1'
-                    ],
+                    backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6366F1'],
                 }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
             }
         });
     </script>

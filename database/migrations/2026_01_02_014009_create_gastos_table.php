@@ -15,10 +15,9 @@ return new class extends Migration
             $table->id();
             // Relacionamos el gasto con el usuario que está logueado
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            
             $table->string('descripcion');
             $table->decimal('monto', 10, 2); // Ejemplo: 1500.50
-            $table->string('categoria');    // Ejemplo: Comida, Transporte, Ocio
+            $table->foreignId('categoria_id')->constrained('categoria_gastos')->onDelete('cascade');;
             $table->date('fecha');          // Cuándo se hizo el gasto
             $table->timestamps();           // Crea 'created_at' y 'updated_at'
         });
