@@ -44,6 +44,9 @@ public function index(Request $request)
         // 4. Crear un objeto Carbon para mostrar el nombre del mes en la vista
         $fechaObjeto = \Carbon\Carbon::create($anio, $mes, 1);
 
+
+        $ingreso = new Ingreso();
+
         return view('ingresos.index', compact(
             'ingresos', 'ingresosPorFuente', 'fuentes', 
             'total_ingresos', 'mes', 'anio', 'fechaObjeto'
@@ -80,4 +83,30 @@ public function index(Request $request)
 
         return redirect()->back()->with('success', 'Ingreso eliminado');
     }
+
+    public function edit(Ingreso $ingreso)
+    {
+        if ($ingreso->user_id !== auth()->id()) abort(403);
+        
+        $fuentes = \App\Models\FuenteIngreso::where('user_id', auth()->id())->get();
+        return view('ingresos.edit', compact('ingreso', 'fuentes'));
+    }
+
+    public function update(Request $request, Ingreso $ingreso)
+    {
+        if ($ingreso->user_id !== auth()->id()) abort(403);
+
+        $validated = $request->validate([
+            'descripcion' => 'required|string',
+            'monto' => 'required|numeric',
+            'fuente_ingreso_id' => 'required|exists:fuente_ingresos,id',
+            'fecha' => 'required|date',
+        ]);
+
+        $ingreso->update($validated);
+
+        return redirect()->route('ingresos.index')->with('success', 'Ingreso actualizado correctamente');
+    }
+
+    
 }

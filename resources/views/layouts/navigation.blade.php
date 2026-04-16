@@ -21,6 +21,9 @@
                     <x-nav-link :href="route('ingresos.index')" :active="request()->routeIs('ingresos.index')">
                         {{ __('Mis Ingresos') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('importar.index')" :active="request()->routeIs('importar.index')" class="text-orange-600 font-bold">
+                        {{ __('Importar CSV') }}
+                    </x-nav-link>
                 </div>
                 <div class="hidden sm:flex sm:items-center sm:ms-6">
                     <x-dropdown align="right" width="48">
@@ -112,6 +115,10 @@
 
             <x-responsive-nav-link :href="route('ingresos.index')" :active="request()->routeIs('ingresos.index')">
                 {{ __('Mis Ingresos') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('importar.index')" :active="request()->routeIs('importar.*')">
+                {{ __('Importar CSV') }}
             </x-responsive-nav-link>
         </div>
 

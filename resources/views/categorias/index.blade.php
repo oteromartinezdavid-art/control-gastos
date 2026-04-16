@@ -4,7 +4,19 @@
             Gestión de Categorías de Gastos
         </h2>
     </x-slot>
+     @if(session('error'))
+        <div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 shadow-sm" role="alert">
+            <p class="font-bold">Error</p>
+            <p>{{ session('error') }}</p>
+        </div>
+    @endif
 
+    @if(session('success'))
+        <div class="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 shadow-sm" role="alert">
+            <p class="font-bold">Éxito</p>
+            <p>{{ session('success') }}</p>
+        </div>
+    @endif
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 mb-6">
@@ -27,7 +39,7 @@
                     </button>
                 </form>
             </div>
-
+           
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-gray-100">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -44,7 +56,16 @@
                             <td class="px-6 py-4"><div class="w-6 h-6 rounded-full" style="background-color: {{ $cat->color }}"></div></td>
                             <td class="px-6 py-4 font-medium text-gray-900">{{ $cat->nombre }}</td>
                             <td class="px-6 py-4">{{ number_format($cat->presupuesto_mensual, 2) }}€</td>
-                            <td class="px-6 py-4 text-sm text-red-600 hover:text-red-900 cursor-pointer">Eliminar</td>
+                            <td class="px-6 py-4 text-sm text-red-600 hover:text-red-900 cursor-pointer">
+                                <form action="{{ route('categorias.destroy', $cat->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar esta categoría?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900 font-medium">
+                                        Eliminar
+                                    </button>
+                                </form>
+                                <a href="{{ route('categorias.edit', $cat) }}" class="text-blue-600 hover:text-blue-900 ml-2 text-xs">Editar</a>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>

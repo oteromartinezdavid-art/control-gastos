@@ -4,13 +4,13 @@
             {{ __('Mi Control de Ingresos') }}
         </h2>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-6">
-            <div class="flex items-center justify-between bg-white p-4 shadow-sm sm:rounded-lg">
+            <div class="flex items-center justify-between bg-white p-4 shadow-sm sm:rounded-lg border-l-4 border-green-500">
                 <a href="{{ route('ingresos.index', ['mes' => $fechaObjeto->copy()->subMonth()->month, 'anio' => $fechaObjeto->copy()->subMonth()->year]) }}" 
                 class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-bold">
                     ← {{ ucfirst($fechaObjeto->copy()->subMonth()->translatedFormat('F')) }}
                 </a>
                 
-                <h3 class="text-xl font-bold text-indigo-900 uppercase">
+                <h3 class="text-lg font-black text-gray-800 uppercase tracking-widest">
                     {{ $fechaObjeto->translatedFormat('F Y') }}
                 </h3>
 
@@ -56,14 +56,7 @@
                 </form>
             </div>
 
-            <div class="bg-white p-6 shadow-sm sm:rounded-lg mb-6">
-                <h3 class="text-lg font-medium mb-4 text-center">Ingresos por Fuente</h3>
-                <div style="max-width: 300px; margin: auto;">
-                    <canvas id="myChart"></canvas>
-                </div>
-            </div>
-
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                 <h3 class="text-lg font-medium mb-4">Historial de Ingresos</h3>
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-[#f8fafc] text-[#1e1b4b] border-b-2 border-[#f97316]">
@@ -86,11 +79,14 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right font-bold text-green-600">${{ number_format($ingreso->monto, 2) }}</td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="py-3 text-center flex justify-center items-center space-x-3">
+                                <a href="{{ route('ingresos.edit', $ingreso) }}" class="text-blue-600 hover:text-blue-800 font-bold uppercase text-xs">
+                                    Editar
+                                </a>
                                 <form action="{{ route('ingresos.destroy', $ingreso) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este ingreso?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-900 font-medium">
+                                   <button type="submit" class="text-red-600 hover:text-red-800 font-bold uppercase text-xs">
                                         Eliminar
                                     </button>
                                 </form>
@@ -106,6 +102,13 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-medium mb-4 text-center">Ingresos por Fuente</h3>
+                <div style="max-width: 300px; margin: auto;">
+                    <canvas id="myChart"></canvas>
+                </div>
             </div>
 
         </div>

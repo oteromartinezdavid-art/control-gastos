@@ -12,7 +12,7 @@ use Carbon\Carbon;
 class GastoController extends Controller
 {
     // Mostrar la lista de gastos del usuario
-    public function index(Request $request) // Asegúrate de recibir $request
+    public function index(Request $request)
     {
         $user_id = auth()->id();
 
@@ -20,11 +20,11 @@ class GastoController extends Controller
         $mesActual = $request->get('mes', now()->month);
         $anioActual = $request->get('anio', now()->year);
 
-        // 2. Crear un objeto Carbon para facilitar la navegación y el título en la vista
+        // 2. Crear un objeto Carbon para facilitar la navegación
         $fechaObjeto = \Carbon\Carbon::create($anioActual, $mesActual, 1);
 
         // 3. Listado filtrado por el mes seleccionado
-        $gastos = Gasto::with('categoriaGasto') // Cargamos la relación
+        $gastos = Gasto::with('categoriaGasto')
             ->where('user_id', $user_id)
             ->whereMonth('fecha', $mesActual)
             ->whereYear('fecha', $anioActual)
@@ -39,16 +39,19 @@ class GastoController extends Controller
             ->whereMonth('gastos.fecha', $mesActual)
             ->whereYear('gastos.fecha', $anioActual)
             ->join('categoria_gastos', 'gastos.categoria_id', '=', 'categoria_gastos.id')
-            ->select('categoria_gastos.nombre as categoria', \DB::raw('SUM(monto) as total'))
-            ->groupBy('categoria_gastos.nombre')
+            ->select('categoria_gastos.nombre as categoria', 'categoria_gastos.color', \DB::raw('SUM(monto) as total'))
+            ->groupBy('categoria_gastos.nombre', 'categoria_gastos.color') // Añadido color al groupBy para evitar errores SQL
             ->get();
 
-        // 6. Categorías para el desplegable (disponibles siempre)
+        // 6. Categorías para el desplegable
         $categorias = CategoriaGasto::where('user_id', $user_id)
             ->orderBy('nombre')
             ->get();
+
+        // Creamos una instancia vacía de Gasto para que el formulario @include('gastos.form-fields') 
+        // tenga un objeto donde buscar (aunque esté vacío) y no lance error.
+        $gasto = new Gasto(); 
         
-        // Pasamos las nuevas variables 'mes', 'anio' y 'fechaObjeto' a la vista
         return view('gastos.index', compact(
             'gastos', 
             'total', 
@@ -56,7 +59,8 @@ class GastoController extends Controller
             'categorias', 
             'mesActual', 
             'anioActual', 
-            'fechaObjeto'
+            'fechaObjeto',
+            'gasto' // No olvides añadirlo al compact
         ));
     }
 
@@ -100,17 +104,30 @@ class GastoController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Gasto $gasto)
     {
-        //
+        // Seguridad: verificar que el gasto es del usuario
+        if ($gasto->user_id !== auth()->id()) abort(403);
+        
+        $categorias = CategoriaGasto::where('user_id', auth()->id())->get();
+        return view('gastos.edit', compact('gasto', 'categorias'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    // Procesa el cambio en la base de datos
+    public function update(Request $request, Gasto $gasto)
     {
-        //
+        if ($gasto->user_id !== auth()->id()) abort(403);
+
+        $validated = $request->validate([
+            'descripcion' => 'required|string|max:255',
+            'monto' => 'required|numeric',
+            'categoria_id' => 'required|exists:categoria_gastos,id',
+            'fecha' => 'required|date',
+        ]);
+
+        $gasto->update($validated);
+
+        return redirect()->route('gastos.index')->with('success', 'Gasto actualizado correctamente.');
     }
 
     /**

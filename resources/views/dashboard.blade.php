@@ -56,7 +56,7 @@
                         <p class="text-sm opacity-80">Este mes has registrado {{ count($movimientos) }} movimientos.</p>
                         <p class="mt-4 text-lg">
                             Tu mayor gasto se concentra en: 
-                            <span class="font-bold text-[#38bdf8] block text-2xl">
+                            <span class="font-bold block text-2xl" style="color: {{ $categoriasColores[0] ?? '#38bdf8' }}">
                                 {{ $categoriasLabels[0] ?? 'N/A' }}
                             </span>
                         </p>
@@ -68,14 +68,14 @@
 
             <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div class="flex items-center space-x-4">
-                    <a href="{{ route('dashboard', ['mes' => $fechaAnterior->month, 'año' => $fechaAnterior->year]) }}" 
+                    <a href="{{ route('dashboard', ['mes' => $fechaAnterior->month, 'anio' => $fechaAnterior->year]) }}" 
                        class="p-2 rounded-full hover:bg-gray-100 text-[#1e1b4b] border border-gray-200">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                     </a>
                     <h3 class="text-xl font-bold text-[#1e1b4b] min-w-[180px] text-center capitalize">
-                        {{ Carbon\Carbon::create($año, $mes)->translatedFormat('F Y') }}
+                        {{ Carbon\Carbon::create($anio, $mes)->translatedFormat('F Y') }}
                     </h3>
-                    <a href="{{ route('dashboard', ['mes' => $fechaSiguiente->month, 'año' => $fechaSiguiente->year]) }}" 
+                    <a href="{{ route('dashboard', ['mes' => $fechaSiguiente->month, 'anio' => $fechaSiguiente->year]) }}" 
                        class="p-2 rounded-full hover:bg-gray-100 text-[#1e1b4b] border border-gray-200">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                     </a>
@@ -89,9 +89,9 @@
                             </option>
                         @endforeach
                     </select>
-                    <select name="año" class="rounded-md border-gray-300 text-sm focus:ring-[#f97316]">
+                    <select name="anio" class="rounded-md border-gray-300 text-sm focus:ring-[#f97316]">
                         @foreach(range(Carbon\Carbon::now()->year, Carbon\Carbon::now()->year - 3) as $a)
-                            <option value="{{ $a }}" {{ $año == $a ? 'selected' : '' }}>{{ $a }}</option>
+                            <option value="{{ $a }}" {{ $anio == $a ? 'selected' : '' }}>{{ $a }}</option>
                         @endforeach
                     </select>
                     <button type="submit" class="bg-[#1e1b4b] text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition">Ir</button>
@@ -140,7 +140,8 @@
                 labels: {!! json_encode($categoriasLabels) !!},
                 datasets: [{
                     data: {!! json_encode($categoriasTotales) !!},
-                    backgroundColor: ['#1e1b4b', '#f97316', '#38bdf8', '#818cf8', '#fbbf24', '#f472b6'],
+                    // Sustituimos el array fijo por los colores de la base de datos
+                    backgroundColor: {!! json_encode($categoriasColores) !!}, 
                     borderWidth: 2,
                     borderColor: '#ffffff'
                 }]
@@ -148,7 +149,15 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
+                plugins: { 
+                    legend: { 
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    } 
+                },
                 cutout: '70%'
             }
         });

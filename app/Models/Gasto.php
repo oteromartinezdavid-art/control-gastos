@@ -12,4 +12,10 @@ class Gasto extends Model
         // Un gasto pertenece a una categoría (usando el campo categoria_id)
         return $this->belongsTo(CategoriaGasto::class, 'categoria_id');
     }
+
+    public function gastos()
+    {
+        // Una categoría tiene muchos gastos
+        return $this->hasMany(Gasto::class, 'categoria_id');
+    }
 }
