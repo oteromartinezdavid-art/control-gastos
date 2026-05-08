@@ -8,33 +8,46 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {{-- 1. Fila de Tarjetas (Ahora con 4 columnas) --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                {{-- Ingresos --}}
                 <div class="bg-white border-l-4 border-green-500 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <div class="text-sm font-medium text-gray-500 uppercase">Total Ingresos</div>
-                    <div class="mt-1 text-3xl font-bold text-green-600">${{ number_format($totalIngresos, 2) }}</div>
+                    <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Ingresos</div>
+                    <div class="mt-1 text-2xl font-black text-green-600">{{ number_format($totalIngresos, 2, ',', '.') }}€</div>
                 </div>
 
+                {{-- Gastos Ejecutados (Lo que ya ha salido) --}}
                 <div class="bg-white border-l-4 border-red-500 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <div class="text-sm font-medium text-gray-500 uppercase">Total Gastos</div>
-                    <div class="mt-1 text-3xl font-bold text-red-600">${{ number_format($totalGastos, 2) }}</div>
+                    <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Gastos Ejecutados</div>
+                    <div class="mt-1 text-2xl font-black text-red-600">{{ number_format($totalGastosRealizados, 2, ',', '.') }}€</div>
                 </div>
 
+                {{-- Gastos Fijos Pendientes (Lo que va a salir) --}}
+                <div class="bg-white border-l-4 border-orange-500 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <div class="text-xs font-bold text-orange-600 uppercase tracking-wider italic">Fijos Pendientes</div>
+                    <div class="mt-1 text-2xl font-black text-orange-700">{{ number_format($pendienteFijos, 2, ',', '.') }}€</div>
+                </div>
+
+                {{-- Saldo "Real" Final (Lo que te queda libre) --}}
                 <div class="bg-white border-l-4 border-blue-500 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <div class="text-sm font-medium text-gray-500 uppercase">Saldo Actual</div>
-                    <div class="mt-1 text-3xl font-bold {{ $saldo >= 0 ? 'text-blue-600' : 'text-orange-600' }}">
-                        ${{ number_format($saldo, 2) }}
+                    <div class="text-xs font-bold text-gray-500 uppercase tracking-wider">Saldo "Real" Final</div>
+                    <div class="mt-1 text-2xl font-black {{ $saldoRealFinal >= 0 ? 'text-blue-600' : 'text-red-600' }}">
+                        {{ number_format($saldoRealFinal, 2, ',', '.') }}€
                     </div>
                 </div>
             </div>
 
+            {{-- Botones de acción rápida --}}
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 text-center mb-6">
-                <p class="text-gray-600 mb-4">¿Qué deseas registrar hoy?</p>
+                <p class="text-gray-600 mb-4 font-medium italic">¿Qué deseas registrar hoy?</p>
                 <div class="flex justify-center space-x-4">
-                    <a href="{{ route('ingresos.index') }}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">+ Nuevo Ingreso</a>
-                    <a href="{{ route('gastos.index') }}" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">+ Nuevo Gasto</a>
+                    <a href="{{ route('ingresos.index') }}" class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 shadow-md transition-all">+ Ingreso</a>
+                    <a href="{{ route('gastos.index') }}" class="bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700 shadow-md transition-all">+ Gasto</a>
+                    <a href="{{ route('gastos-fijos.index') }}" class="bg-orange-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-600 shadow-md transition-all">Ver Fijos</a>
                 </div>
             </div>
 
+            {{-- Gráfica de Gasto Diario --}}
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                 <h3 class="text-lg font-bold text-[#1e1b4b] mb-4">Evolución de Gasto Diario</h3>
                 <div style="height: 250px;">
@@ -42,7 +55,68 @@
                 </div>
             </div>
 
+            {{-- Resumen Financiaciones e Inversiones --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+                {{-- Financiaciones --}}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-[#1e1b4b] font-bold text-sm uppercase tracking-wider">Préstamos y Financiaciones</h4>
+                        <a href="{{ route('financiaciones.index') }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Ver detalle →</a>
+                    </div>
+                    @if($numFinanciaciones > 0)
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-black text-[#1e1b4b]">{{ $numFinanciaciones }}</div>
+                                <div class="text-xs text-gray-500 mt-1">Activos</div>
+                            </div>
+                            <div class="text-center border-x border-gray-100">
+                                <div class="text-2xl font-black text-orange-600">{{ number_format($totalCuotaMensual, 0, ',', '.') }}€</div>
+                                <div class="text-xs text-gray-500 mt-1">Cuota/mes</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-black text-red-600">{{ number_format($totalDeudaPendiente, 0, ',', '.') }}€</div>
+                                <div class="text-xs text-gray-500 mt-1">Deuda total</div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-center py-6 text-gray-400 text-sm italic">Sin financiaciones activas</div>
+                    @endif
+                </div>
+
+                {{-- Inversiones --}}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-[#1e1b4b] font-bold text-sm uppercase tracking-wider">Cartera de Inversiones</h4>
+                        <a href="{{ route('inversiones.index') }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Ver cartera →</a>
+                    </div>
+                    @if($numActivos > 0)
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-black text-[#1e1b4b]">{{ $numActivos }}</div>
+                                <div class="text-xs text-gray-500 mt-1">Activos</div>
+                            </div>
+                            <div class="text-center border-x border-gray-100">
+                                <div class="text-2xl font-black text-indigo-600">{{ number_format($totalInvertidoCartera, 0, ',', '.') }}€</div>
+                                <div class="text-xs text-gray-500 mt-1">Compras brutas</div>
+                            </div>
+                            <div class="text-center">
+                                @php $retornoTotal = $totalVentasCartera + $totalDividendosCartera; @endphp
+                                <div class="text-2xl font-black {{ $retornoTotal >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ number_format($retornoTotal, 0, ',', '.') }}€
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">Ventas + Divid.</div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-center py-6 text-gray-400 text-sm italic">Sin activos registrados</div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+                {{-- Gráfica de Categorías --}}
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                     <h4 class="text-[#1e1b4b] font-bold mb-4">Distribución por Categoría</h4>
                     <div style="max-height: 250px;" class="flex justify-center">
@@ -50,86 +124,49 @@
                     </div>
                 </div>
 
-                <div class="bg-[#1e1b4b] p-6 rounded-lg shadow-sm text-white flex flex-col justify-center">
-                    <h4 class="font-bold text-[#f97316] mb-2 text-xl">Análisis del Mes</h4>
-                    @if($totalGastos > 0)
-                        <p class="text-sm opacity-80">Este mes has registrado {{ count($movimientos) }} movimientos.</p>
-                        <p class="mt-4 text-lg">
-                            Tu mayor gasto se concentra en: 
-                            <span class="font-bold block text-2xl" style="color: {{ $categoriasColores[0] ?? '#38bdf8' }}">
-                                {{ $categoriasLabels[0] ?? 'N/A' }}
-                            </span>
-                        </p>
+                {{-- Análisis del Mes --}}
+                <div class="bg-[#1e1b4b] p-6 rounded-2xl shadow-xl text-white relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-[#f97316] opacity-10 rounded-full"></div>
+                    <h4 class="font-bold text-[#f97316] mb-4 text-xs uppercase tracking-widest">Análisis del Mes</h4>
+
+                    @php
+                        // Obtenemos la categoría con mayor gasto directamente de la colección
+                        $mayorGasto = $datosGrafico->sortByDesc('total')->first();
+                    @endphp
+
+                    @if($mayorGasto)
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-3xl font-extrabold tracking-tight">
+                                    {{ $mayorGasto->nombre }}
+                                </p>
+                                <p class="text-[#94a3b8] text-sm font-medium">Categoría con mayor impacto</p>
+                            </div>
+
+                            <div class="flex items-end gap-2">
+                                <span class="text-2xl font-bold text-white">
+                                    {{ number_format($mayorGasto->total, 2, ',', '.') }}€
+                                </span>
+                                <span class="text-green-400 text-sm mb-1 font-semibold">
+                                    ({{ number_format(($mayorGasto->total / $totalGastosRealizados) * 100, 1) }}%)
+                                </span>
+                            </div>
+
+                            <div class="pt-4 border-t border-white/10 text-gray-400 text-sm">
+                                <p>Representa la mayor parte de tus salidas este mes.</p>
+                            </div>
+                        </div>
                     @else
-                        <p>No hay gastos suficientes para generar un análisis detallado.</p>
+                        <div class="flex flex-col items-center justify-center py-8 text-center text-gray-400">
+                            <p class="text-sm italic">Sin datos de gasto suficientes para analizar.</p>
+                        </div>
                     @endif
                 </div>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                <div class="flex items-center space-x-4">
-                    <a href="{{ route('dashboard', ['mes' => $fechaAnterior->month, 'anio' => $fechaAnterior->year]) }}" 
-                       class="p-2 rounded-full hover:bg-gray-100 text-[#1e1b4b] border border-gray-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                    </a>
-                    <h3 class="text-xl font-bold text-[#1e1b4b] min-w-[180px] text-center capitalize">
-                        {{ Carbon\Carbon::create($anio, $mes)->translatedFormat('F Y') }}
-                    </h3>
-                    <a href="{{ route('dashboard', ['mes' => $fechaSiguiente->month, 'anio' => $fechaSiguiente->year]) }}" 
-                       class="p-2 rounded-full hover:bg-gray-100 text-[#1e1b4b] border border-gray-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                    </a>
-                </div>
-
-                <form action="{{ route('dashboard') }}" method="GET" class="flex items-center gap-2">
-                    <select name="mes" class="rounded-md border-gray-300 text-sm focus:ring-[#f97316]">
-                        @foreach(range(1, 12) as $m)
-                            <option value="{{ $m }}" {{ $mes == $m ? 'selected' : '' }}>
-                                {{ Carbon\Carbon::create()->month($m)->translatedFormat('M') }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <select name="anio" class="rounded-md border-gray-300 text-sm focus:ring-[#f97316]">
-                        @foreach(range(Carbon\Carbon::now()->year, Carbon\Carbon::now()->year - 3) as $a)
-                            <option value="{{ $a }}" {{ $anio == $a ? 'selected' : '' }}>{{ $a }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="bg-[#1e1b4b] text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition">Ir</button>
-                </form>
-            </div>
-
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-medium mb-4 text-[#1e1b4b]">Resumen de Movimientos</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b text-gray-400 text-sm">
-                                <th class="py-2">Tipo</th>
-                                <th class="py-2">Descripción</th>
-                                <th class="py-2 text-right">Monto</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($movimientos as $mov)
-                            <tr class="border-b hover:bg-gray-50 transition">
-                                <td class="py-3">
-                                    <span class="px-2 py-1 rounded-full text-xs font-bold {{ $mov->tipo == 'ingreso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                                        {{ strtoupper($mov->tipo) }}
-                                    </span>
-                                </td>
-                                <td class="py-3 text-gray-700">{{ $mov->descripcion }}</td>
-                                <td class="py-3 text-right font-bold {{ $mov->tipo == 'ingreso' ? 'text-green-600' : 'text-red-600' }}">
-                                    {{ $mov->tipo == 'ingreso' ? '+' : '-' }}${{ number_format($mov->monto, 2) }}
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            </div>                  
         </div>
     </div>
 
+    {{-- Chart.js Scripts (Igual que antes) --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // --- GRÁFICA DE DONA (CATEGORÍAS) ---
@@ -137,11 +174,11 @@
         new Chart(ctxDona, {
             type: 'doughnut',
             data: {
-                labels: {!! json_encode($categoriasLabels) !!},
+                // Extraemos etiquetas, totales y colores directamente de la colección $datosGrafico
+                labels: {!! json_encode($datosGrafico->pluck('nombre')) !!},
                 datasets: [{
-                    data: {!! json_encode($categoriasTotales) !!},
-                    // Sustituimos el array fijo por los colores de la base de datos
-                    backgroundColor: {!! json_encode($categoriasColores) !!}, 
+                    data: {!! json_encode($datosGrafico->pluck('total')) !!},
+                    backgroundColor: {!! json_encode($datosGrafico->pluck('color')) !!}, 
                     borderWidth: 2,
                     borderColor: '#ffffff'
                 }]
@@ -169,7 +206,7 @@
             data: {
                 labels: {!! json_encode($labelsDias) !!},
                 datasets: [{
-                    label: 'Gasto Diario ($)',
+                    label: 'Gasto Diario (€)',
                     data: {!! json_encode($datosDias) !!},
                     borderColor: '#f97316',
                     backgroundColor: 'rgba(249, 115, 22, 0.1)',
@@ -184,7 +221,10 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true, ticks: { callback: value => '$' + value } },
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { callback: value => value + '€' } 
+                    },
                     x: { grid: { display: false } }
                 },
                 plugins: { legend: { display: false } }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Ingreso extends Model
 {
     //
-    protected $fillable = ['user_id', 'descripcion', 'monto', 'fuente_ingreso_id', 'fecha'];
+    protected $fillable = ['user_id', 'descripcion', 'monto', 'fuente_ingreso_id', 'fecha', 'hash'];
 
     /**
      * Define la relación con la tabla de fuentes.

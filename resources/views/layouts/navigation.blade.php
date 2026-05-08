@@ -11,47 +11,72 @@
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden space-x-6 sm:-my-px sm:ms-10 sm:flex items-center">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('gastos.index')" :active="request()->routeIs('gastos.index')">
-                        {{ __('Mis Gastos') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('ingresos.index')" :active="request()->routeIs('ingresos.index')">
-                        {{ __('Mis Ingresos') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('importar.index')" :active="request()->routeIs('importar.index')" class="text-orange-600 font-bold">
-                        {{ __('Importar CSV') }}
-                    </x-nav-link>
-                </div>
-                <div class="hidden sm:flex sm:items-center sm:ms-6">
-                    <x-dropdown align="right" width="48">
+
+                    {{-- Finanzas dropdown --}}
+                    <x-dropdown align="left" width="48" contentClasses="py-1 bg-[#1e1b4b] border border-indigo-700">
                         <x-slot name="trigger">
-                            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                <div>Gestión Data</div>
-                                <div class="ms-1">
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
+                            <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none
+                                {{ request()->routeIs('gastos.*') || request()->routeIs('ingresos.*') || request()->routeIs('importar.*')
+                                    ? 'border-indigo-300 text-white'
+                                    : 'border-transparent text-indigo-200 hover:text-white hover:border-indigo-300' }}">
+                                Finanzas
+                                <svg class="ms-1 h-4 w-4 fill-current" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
                             </button>
                         </x-slot>
-
                         <x-slot name="content">
-                            <x-dropdown-link :href="route('categorias-gastos.index')">
-                                Categorías de Gastos
-                            </x-dropdown-link>
+                            <a href="{{ route('gastos.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Mis Gastos</a>
+                            <a href="{{ route('ingresos.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Mis Ingresos</a>
+                            <hr class="border-indigo-700 my-1">
+                            <a href="{{ route('importar.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Importar CSV</a>
+                        </x-slot>
+                    </x-dropdown>
 
-                            <x-dropdown-link :href="route('fuentes-ingresos.index')">
-                                Fuentes de Ingreso
-                            </x-dropdown-link>
-                            
-                            <hr class="border-gray-100">
+                    {{-- Fijos & Préstamos dropdown --}}
+                    <x-dropdown align="left" width="48" contentClasses="py-1 bg-[#1e1b4b] border border-indigo-700">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none
+                                {{ request()->routeIs('gastos-fijos.*') || request()->routeIs('financiaciones.*')
+                                    ? 'border-indigo-300 text-white'
+                                    : 'border-transparent text-indigo-200 hover:text-white hover:border-indigo-300' }}">
+                                Fijos y Préstamos
+                                <svg class="ms-1 h-4 w-4 fill-current" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <a href="{{ route('gastos-fijos.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Gastos Fijos</a>
+                            <a href="{{ route('financiaciones.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Financiaciones</a>
+                        </x-slot>
+                    </x-dropdown>
 
-                            <div class="block px-4 py-2 text-xs text-gray-400">
+                    <x-nav-link :href="route('inversiones.index')" :active="request()->routeIs('inversiones.*')">
+                        {{ __('Inversiones') }}
+                    </x-nav-link>
+
+                    {{-- Configuración dropdown --}}
+                    <x-dropdown align="left" width="48" contentClasses="py-1 bg-[#1e1b4b] border border-indigo-700">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none
+                                {{ request()->routeIs('categorias.*') || request()->routeIs('fuentes.*') || request()->routeIs('reglas.*')
+                                    ? 'border-indigo-300 text-white'
+                                    : 'border-transparent text-indigo-200 hover:text-white hover:border-indigo-300' }}">
                                 Configuración
-                            </div>
+                                <svg class="ms-1 h-4 w-4 fill-current" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <a href="{{ route('categorias.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Categorías de Gastos</a>
+                            <a href="{{ route('fuentes.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Fuentes de Ingresos</a>
+                            <a href="{{ route('reglas.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Reglas de Importación</a>
                         </x-slot>
                     </x-dropdown>
                 </div>
@@ -59,7 +84,7 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
+                <x-dropdown align="right" width="48" contentClasses="py-1 bg-white">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-[#1e1b4b] bg-white hover:text-[#f97316] focus:outline-none transition ease-in-out duration-150">
                             <div>{{ Auth::user()->name }}</div>
@@ -109,16 +134,39 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('gastos.index')" :active="request()->routeIs('gastos.index')">
+
+            <div class="block px-4 py-1 text-xs font-bold uppercase tracking-widest text-indigo-300">Finanzas</div>
+            <x-responsive-nav-link :href="route('gastos.index')" :active="request()->routeIs('gastos.*')">
                 {{ __('Mis Gastos') }}
             </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('ingresos.index')" :active="request()->routeIs('ingresos.index')">
+            <x-responsive-nav-link :href="route('ingresos.index')" :active="request()->routeIs('ingresos.*')">
                 {{ __('Mis Ingresos') }}
             </x-responsive-nav-link>
-
             <x-responsive-nav-link :href="route('importar.index')" :active="request()->routeIs('importar.*')">
                 {{ __('Importar CSV') }}
+            </x-responsive-nav-link>
+
+            <div class="block px-4 py-1 text-xs font-bold uppercase tracking-widest text-indigo-300">Fijos y Préstamos</div>
+            <x-responsive-nav-link :href="route('gastos-fijos.index')" :active="request()->routeIs('gastos-fijos.*')">
+                {{ __('Gastos Fijos') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('financiaciones.index')" :active="request()->routeIs('financiaciones.*')">
+                {{ __('Financiaciones') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('inversiones.index')" :active="request()->routeIs('inversiones.*')">
+                {{ __('Inversiones') }}
+            </x-responsive-nav-link>
+
+            <div class="block px-4 py-1 text-xs font-bold uppercase tracking-widest text-indigo-300">Configuración</div>
+            <x-responsive-nav-link :href="route('categorias.index')" :active="request()->routeIs('categorias.*')">
+                {{ __('Categorías de Gastos') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('fuentes.index')" :active="request()->routeIs('fuentes.*')">
+                {{ __('Fuentes de Ingresos') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('reglas.index')" :active="request()->routeIs('reglas.*')">
+                {{ __('Reglas de Importación') }}
             </x-responsive-nav-link>
         </div>
 

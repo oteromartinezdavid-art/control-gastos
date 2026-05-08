@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ingresos', function (Blueprint $table) {
+        Schema::create('reglas_categorizacion', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('fuente_ingreso_id')->constrained('fuente_ingresos')->onDelete('cascade');
-            $table->string('descripcion');
-            $table->decimal('monto', 10, 2);
-            $table->date('fecha');
-            $table->string('hash')->nullable()->unique();
+            $table->string('palabra_clave'); // Ej: "MERCADONA"
+            $table->foreignId('categoria_id')->constrained('categoria_gastos')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -28,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ingresos');
+        Schema::dropIfExists('reglas_categorizacion');
     }
 };
