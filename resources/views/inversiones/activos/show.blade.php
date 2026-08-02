@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="flex items-center justify-between flex-wrap gap-3">
             <div class="flex items-center gap-3">
-                <a href="{{ route('inversiones.activos.index') }}"
-                   class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Activos</a>
+                <a href="#" onclick="history.back(); return false;"
+                   class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Volver</a>
                 <span class="text-gray-300">|</span>
                 <div>
                     <h2 class="font-black text-2xl text-[#1e1b4b] leading-none">{{ $activo->ticker }}</h2>
@@ -34,13 +34,16 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             {{-- ── KPIs HISTÓRICOS ── --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            @php
+                $prPos = $pnlRealizado >= 0;
+                $totalComisionesSolo = $desglosGastos['bancaria'] + $desglosGastos['bolsa'] + $desglosGastos['divisa'];
+            @endphp
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div class="bg-white p-5 rounded-lg shadow-sm border-b-4 border-gray-400">
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Invertido</p>
                     <p class="text-2xl font-black text-gray-900 mt-1">{{ number_format($totalInvertido, 2, ',', '.') }}€</p>
-                    <p class="text-xs text-gray-400 mt-1">coste histórico total (incl. com.)</p>
+                    <p class="text-xs text-gray-400 mt-1">coste histórico total (incl. gastos)</p>
                 </div>
-                @php $prPos = $pnlRealizado >= 0; @endphp
                 <div class="bg-white p-5 rounded-lg shadow-sm border-b-4 border-{{ $prPos ? 'emerald' : 'red' }}-400">
                     <p class="text-xs font-bold text-{{ $prPos ? 'emerald' : 'red' }}-600 uppercase tracking-widest">P&L Realizado</p>
                     <p class="text-2xl font-black text-{{ $prPos ? 'emerald' : 'red' }}-700 mt-1">
@@ -53,10 +56,30 @@
                     <p class="text-2xl font-black text-teal-700 mt-1">{{ number_format($totalDivNeto, 2, ',', '.') }}€</p>
                     <p class="text-xs text-gray-400 mt-1">{{ number_format($totalDivBruto, 2, ',', '.') }}€ bruto · {{ $dividendos->count() }} cobro(s)</p>
                 </div>
+                {{-- Comisiones (bancaria + bolsa + divisa) --}}
                 <div class="bg-white p-5 rounded-lg shadow-sm border-b-4 border-orange-400">
-                    <p class="text-xs font-bold text-orange-600 uppercase tracking-widest">Comisiones Pagadas</p>
-                    <p class="text-2xl font-black text-orange-700 mt-1">{{ number_format($totalComisiones, 2, ',', '.') }}€</p>
-                    <p class="text-xs text-gray-400 mt-1">{{ $operaciones->count() }} operación(es) totales</p>
+                    <p class="text-xs font-bold text-orange-600 uppercase tracking-widest mb-1">Comisiones</p>
+                    <p class="text-2xl font-black text-orange-700">{{ number_format($totalComisionesSolo, 2, ',', '.') }}€</p>
+                    <div class="mt-2 space-y-1">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Bancaria</span>
+                            <span class="font-semibold text-orange-600">{{ number_format($desglosGastos['bancaria'], 2, ',', '.') }}€</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Bolsa</span>
+                            <span class="font-semibold text-orange-600">{{ number_format($desglosGastos['bolsa'], 2, ',', '.') }}€</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Divisa</span>
+                            <span class="font-semibold text-orange-600">{{ number_format($desglosGastos['divisa'], 2, ',', '.') }}€</span>
+                        </div>
+                    </div>
+                </div>
+                {{-- Impuestos --}}
+                <div class="bg-white p-5 rounded-lg shadow-sm border-b-4 border-red-400">
+                    <p class="text-xs font-bold text-red-600 uppercase tracking-widest mb-1">Impuestos</p>
+                    <p class="text-2xl font-black text-red-700">{{ number_format($desglosGastos['impuestos'], 2, ',', '.') }}€</p>
+                    <p class="text-xs text-gray-400 mt-2">{{ $operaciones->count() }} operación(es) totales</p>
                 </div>
             </div>
 
@@ -80,6 +103,12 @@
                             <p class="text-xs text-gray-500">Cotización Actual</p>
                             @if($cotizacion !== null)
                                 <p class="text-xl font-black text-blue-700">{{ number_format($cotizacion, 4, ',', '.') }}€</p>
+                                @if($moneda !== 'EUR' && $cotizacionNativa !== null)
+                                    <p class="text-xs text-gray-400 mt-0.5">
+                                        {{ number_format($cotizacionNativa, 4, ',', '.') }} {{ $moneda }}
+                                        <span class="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">{{ $moneda }}</span>
+                                    </p>
+                                @endif
                             @else
                                 <p class="text-xl font-black text-gray-300">N/D</p>
                             @endif
@@ -187,10 +216,15 @@
                                 <th class="px-4 py-3 text-center">Tipo</th>
                                 <th class="px-4 py-3 text-right">Unidades</th>
                                 <th class="px-4 py-3 text-right">Precio Unit.</th>
-                                <th class="px-4 py-3 text-right">Comisión</th>
+                                <th class="px-4 py-3 text-right">Com. Bancaria</th>
+                                <th class="px-4 py-3 text-right">Com. Bolsa</th>
+                                <th class="px-4 py-3 text-right">Impuestos</th>
+                                <th class="px-4 py-3 text-right">Com. Divisa</th>
+                                <th class="px-4 py-3 text-right">Total Gastos</th>
                                 <th class="px-4 py-3 text-right">Importe Neto</th>
                                 <th class="px-4 py-3 text-right">P&L FIFO</th>
                                 <th class="px-4 py-3">Notas</th>
+                                <th class="px-4 py-3"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -213,8 +247,20 @@
                                 <td class="px-4 py-3 text-right font-mono text-gray-700">
                                     {{ number_format((float)$op->precio_unitario, 4, ',', '.') }}€
                                 </td>
-                                <td class="px-4 py-3 text-right text-orange-600 font-medium">
-                                    {{ number_format((float)$op->comision, 2, ',', '.') }}€
+                                <td class="px-4 py-3 text-right text-orange-500 font-mono text-xs">
+                                    {{ (float)$op->comision > 0 ? number_format((float)$op->comision, 2, ',', '.') . '€' : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-right text-orange-500 font-mono text-xs">
+                                    {{ (float)$op->comision_bolsa > 0 ? number_format((float)$op->comision_bolsa, 2, ',', '.') . '€' : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-right text-orange-500 font-mono text-xs">
+                                    {{ (float)$op->impuestos > 0 ? number_format((float)$op->impuestos, 2, ',', '.') . '€' : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-right text-orange-500 font-mono text-xs">
+                                    {{ (float)$op->comision_divisa > 0 ? number_format((float)$op->comision_divisa, 2, ',', '.') . '€' : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-right text-orange-700 font-bold">
+                                    {{ number_format($op->total_gastos, 2, ',', '.') }}€
                                 </td>
                                 <td class="px-4 py-3 text-right font-bold text-gray-900">
                                     {{ number_format($op->importe_neto, 2, ',', '.') }}€
@@ -229,6 +275,10 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-xs text-gray-400">{{ $op->notas ?? '' }}</td>
+                                <td class="px-4 py-3">
+                                    <a href="{{ route('inversiones.operaciones.edit', $op) }}"
+                                       class="text-xs text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap">✏️ Editar</a>
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>

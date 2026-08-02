@@ -7,6 +7,7 @@ use App\Models\Dividendo;
 use App\Models\OperacionInversion;
 use App\Services\InversionService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class OperacionInversionController extends Controller
 {
@@ -46,7 +47,13 @@ class OperacionInversionController extends Controller
             }
         }
 
-        $totalComisiones = $operaciones->sum('comision');
+        $totalComisiones     = $operaciones->sum('total_gastos');
+        $desglosGastos = [
+            'bancaria' => $operaciones->sum(fn($o) => (float)$o->comision),
+            'bolsa'    => $operaciones->sum(fn($o) => (float)$o->comision_bolsa),
+            'impuestos'=> $operaciones->sum(fn($o) => (float)$o->impuestos),
+            'divisa'   => $operaciones->sum(fn($o) => (float)$o->comision_divisa),
+        ];
         $totalInvertido  = $operaciones->where('tipo', 'compra')->sum(fn($o) => (float)$o->cantidad * (float)$o->precio_unitario);
         $totalVendido    = $operaciones->where('tipo', 'venta')->sum(fn($o) => (float)$o->cantidad * (float)$o->precio_unitario);
 
@@ -84,7 +91,7 @@ class OperacionInversionController extends Controller
 
         return view('inversiones.operaciones.index', compact(
             'operaciones', 'activos', 'request',
-            'totalComisiones', 'totalInvertido', 'totalVendido',
+            'totalComisiones', 'desglosGastos', 'totalInvertido', 'totalVendido',
             'pnlPeriodo', 'aniosDisponibles',
             'dividendosAnio', 'totalDivBruto', 'totalDivRetencion', 'totalDivNeto',
             'ventasDetalle', 'comprasAnio'
@@ -96,12 +103,15 @@ class OperacionInversionController extends Controller
         $userId = auth()->id();
 
         $request->validate([
-            'activo_id'       => 'required|exists:activos,id',
+            'activo_id'       => ['required', Rule::exists('activos', 'id')->where('user_id', auth()->id())],
             'tipo'            => 'required|in:compra,venta',
             'fecha'           => 'required|date',
             'cantidad'        => 'required|numeric|min:0.0001',
             'precio_unitario' => 'required|numeric|min:0',
             'comision'        => 'nullable|numeric|min:0',
+            'comision_bolsa'  => 'nullable|numeric|min:0',
+            'impuestos'       => 'nullable|numeric|min:0',
+            'comision_divisa' => 'nullable|numeric|min:0',
             'notas'           => 'nullable|string|max:500',
         ]);
 
@@ -125,11 +135,71 @@ class OperacionInversionController extends Controller
             'fecha'           => $request->fecha,
             'cantidad'        => $request->cantidad,
             'precio_unitario' => $request->precio_unitario,
-            'comision'        => $request->comision ?? 0,
+            'comision'        => $request->comision        ?? 0,
+            'comision_bolsa'  => $request->comision_bolsa  ?? 0,
+            'impuestos'       => $request->impuestos        ?? 0,
+            'comision_divisa' => $request->comision_divisa ?? 0,
             'notas'           => $request->notas,
         ]);
 
         return redirect()->route('inversiones.operaciones.index')->with('success', 'Operación registrada correctamente.');
+    }
+
+    public function edit(OperacionInversion $operacion)
+    {
+        if ($operacion->user_id !== auth()->id()) abort(403);
+        $activos = Activo::where('user_id', auth()->id())->orderBy('ticker')->get();
+        return view('inversiones.operaciones.edit', compact('operacion', 'activos'));
+    }
+
+    public function update(Request $request, OperacionInversion $operacion)
+    {
+        if ($operacion->user_id !== auth()->id()) abort(403);
+
+        $userId = auth()->id();
+
+        $request->validate([
+            'tipo'            => 'required|in:compra,venta',
+            'fecha'           => 'required|date',
+            'cantidad'        => 'required|numeric|min:0.0001',
+            'precio_unitario' => 'required|numeric|min:0',
+            'comision'        => 'nullable|numeric|min:0',
+            'comision_bolsa'  => 'nullable|numeric|min:0',
+            'impuestos'       => 'nullable|numeric|min:0',
+            'comision_divisa' => 'nullable|numeric|min:0',
+            'notas'           => 'nullable|string|max:500',
+        ]);
+
+        // Si es venta, verificar que hay suficientes unidades (excluyendo esta operación)
+        if ($request->tipo === 'venta') {
+            $disponible = $this->inversionService->getCantidadDisponible($userId, $operacion->activo_id);
+            // Sumar de vuelta las unidades de esta operación si ya era venta
+            $ajuste = $operacion->tipo === 'venta' ? (float)$operacion->cantidad : 0;
+            if ((float)$request->cantidad > $disponible + $ajuste + 0.0001) {
+                return back()
+                    ->withErrors(['cantidad' => "Unidades insuficientes. Disponibles: " . number_format($disponible + $ajuste, 4)])
+                    ->withInput();
+            }
+        }
+
+        $operacion->update([
+            'tipo'            => $request->tipo,
+            'fecha'           => $request->fecha,
+            'cantidad'        => $request->cantidad,
+            'precio_unitario' => $request->precio_unitario,
+            'comision'        => $request->comision        ?? 0,
+            'comision_bolsa'  => $request->comision_bolsa  ?? 0,
+            'impuestos'       => $request->impuestos        ?? 0,
+            'comision_divisa' => $request->comision_divisa ?? 0,
+            'notas'           => $request->notas,
+        ]);
+
+        // Redirigir al detalle del activo si venimos de ahí, si no al listado de operaciones
+        $referer = $request->headers->get('referer', '');
+        if (str_contains($referer, '/inversiones/activos/')) {
+            return redirect()->back()->with('success', 'Operación actualizada correctamente.');
+        }
+        return redirect()->route('inversiones.operaciones.index')->with('success', 'Operación actualizada correctamente.');
     }
 
     public function destroy(OperacionInversion $operacion)

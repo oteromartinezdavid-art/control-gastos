@@ -1,8 +1,21 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Dashboard</h2>
+            <div class="flex items-center gap-3 bg-white shadow-sm rounded-lg px-4 py-2 border border-gray-100">
+                <a href="{{ route('dashboard', ['mes' => $fechaAnterior->month, 'anio' => $fechaAnterior->year]) }}"
+                   class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 font-bold transition">
+                    ← {{ ucfirst($fechaAnterior->translatedFormat('M')) }}
+                </a>
+                <span class="font-black text-gray-800 uppercase tracking-wide min-w-[130px] text-center">
+                    {{ ucfirst($fechaConsulta->translatedFormat('F Y')) }}
+                </span>
+                <a href="{{ route('dashboard', ['mes' => $fechaSiguiente->month, 'anio' => $fechaSiguiente->year]) }}"
+                   class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 font-bold transition">
+                    {{ ucfirst($fechaSiguiente->translatedFormat('M')) }} →
+                </a>
+            </div>
+        </div>
     </x-slot>
 
     <div class="py-12">

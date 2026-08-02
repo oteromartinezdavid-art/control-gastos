@@ -18,8 +18,8 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user_id = auth()->id();
-        $mes = $request->get('mes', Carbon::now()->month);
-        $anio = $request->get('anio', Carbon::now()->year);
+        $mes  = max(1, min(12, (int) $request->get('mes',  Carbon::now()->month)));
+        $anio = max(2000, min(2100, (int) $request->get('anio', Carbon::now()->year)));
 
         $fechaConsulta = Carbon::createFromDate($anio, $mes, 1);
         $fechaAnterior = $fechaConsulta->copy()->subMonth();
@@ -65,10 +65,10 @@ class DashboardController extends Controller
         $numActivos       = Activo::where('user_id', $user_id)->count();
         $totalInvertidoCartera = OperacionInversion::where('user_id', $user_id)
             ->where('tipo', 'compra')
-            ->get()->sum(fn($o) => $o->cantidad * $o->precio_unitario + $o->comision);
+            ->get()->sum(fn($o) => $o->cantidad * $o->precio_unitario + $o->total_gastos);
         $totalVentasCartera = OperacionInversion::where('user_id', $user_id)
             ->where('tipo', 'venta')
-            ->get()->sum(fn($o) => $o->cantidad * $o->precio_unitario - $o->comision);
+            ->get()->sum(fn($o) => $o->cantidad * $o->precio_unitario - $o->total_gastos);
         $totalDividendosCartera = Dividendo::where('user_id', $user_id)->sum('monto_neto');
 
         // Gráficos (Categorías)
@@ -80,8 +80,13 @@ class DashboardController extends Controller
             ->groupBy('categoria_gastos.nombre', 'categoria_gastos.color')->get();
 
         // Gráfico Lineal (Gasto Diario)
+        $dbDriver = config('database.default');
+        $diaExpr  = $dbDriver === 'sqlite'
+            ? 'strftime("%d", fecha)'
+            : 'DATE_FORMAT(fecha, "%d")';
+
         $gastosDiariosRaw = Gasto::where('user_id', $user_id)->whereMonth('fecha', $mes)->whereYear('fecha', $anio)
-            ->selectRaw('strftime("%d", fecha) as dia, SUM(monto) as total')
+            ->selectRaw("{$diaExpr} as dia, SUM(monto) as total")
             ->groupBy('dia')->pluck('total', 'dia')->toArray();
 
         $labelsDias = []; $datosDias = [];
@@ -92,6 +97,7 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', compact(
+            'fechaConsulta',
             'totalIngresos', 'totalGastosRealizados', 'saldoRealFinal', 'pendienteFijos',
             'labelsDias', 'datosDias', 'mes', 'anio', 'fechaAnterior', 'fechaSiguiente',
             'datosGrafico',

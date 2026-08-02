@@ -27,16 +27,18 @@
 
                 <form action="{{ route('ingresos.update', $ingreso) }}" method="POST">
                     @method('PATCH')
-                    
+                    <input type="hidden" name="_mes"  value="{{ $mes }}">
+                    <input type="hidden" name="_anio" value="{{ $anio }}">
+
                     {{-- Reutilizamos los campos unificados --}}
                     @include('ingresos.form-fields')
-                    
+
                     <div class="mt-8 flex items-center space-x-4">
                         <x-primary-button>
                             {{ __('Actualizar Ingreso') }}
                         </x-primary-button>
 
-                        <a href="{{ route('ingresos.index') }}" 
+                        <a href="{{ route('ingresos.index', ['mes' => $mes, 'anio' => $anio]) }}"
                            class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600 active:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
                             {{ __('Cancelar') }}
                         </a>

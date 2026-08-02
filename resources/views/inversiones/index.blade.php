@@ -120,8 +120,11 @@
                                 @endphp
                                 <tr class="hover:bg-gray-50/50">
                                     <td class="px-4 py-3">
-                                        <span class="font-black text-gray-900">{{ $pos['activo']->ticker }}</span>
-                                        <span class="block text-xs text-gray-400">{{ $pos['activo']->nombre }}</span>
+                                        <a href="{{ route('inversiones.activos.show', $pos['activo']->id) }}"
+                                           class="group">
+                                            <span class="font-black text-gray-900 group-hover:text-indigo-600 transition">{{ $pos['activo']->ticker }}</span>
+                                            <span class="block text-xs text-gray-400 group-hover:text-indigo-400 transition">{{ $pos['activo']->nombre }}</span>
+                                        </a>
                                         @if($pos['activo']->sector)
                                             <span class="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-bold uppercase">
                                                 {{ $pos['activo']->sector }}
@@ -137,6 +140,11 @@
                                     <td class="px-4 py-3 text-right font-mono">
                                         @if($pos['cotizacion'] !== null)
                                             <span class="text-gray-800 font-bold">{{ number_format($pos['cotizacion'], 4, ',', '.') }}€</span>
+                                            @if(($pos['moneda'] ?? 'EUR') !== 'EUR' && ($pos['cotizacion_nativa'] ?? null) !== null)
+                                                <span class="block text-[10px] text-gray-400">
+                                                    {{ number_format($pos['cotizacion_nativa'], 2, ',', '.') }} {{ $pos['moneda'] }}
+                                                </span>
+                                            @endif
                                         @else
                                             <span class="text-gray-400 italic text-xs">N/D</span>
                                         @endif

@@ -8,6 +8,7 @@ use App\Models\Ingreso;
 use App\Models\CategoriaGasto;
 use App\Models\FuenteIngreso;
 use App\Models\ReglaCategorizacion;
+use App\Models\ReglaFuenteIngreso;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -33,8 +34,11 @@ class ImportacionController extends Controller
         $importadosCount = 0;
         $user_id = Auth::id();
 
-        // 1. Cargamos las reglas de categorización
-        $reglas = ReglaCategorizacion::where('user_id', $user_id)->get();
+        // 1. Cargamos las reglas de categorización e ingresos
+        $reglas = ReglaCategorizacion::where('user_id', $user_id)->get()
+            ->sortByDesc(fn($r) => strlen($r->palabra_clave))->values();
+        $reglasIngresos = ReglaFuenteIngreso::where('user_id', $user_id)->get()
+            ->sortByDesc(fn($r) => strlen($r->palabra_clave))->values();
 
         // 2. Aseguramos categoría y fuente por defecto
         $categoriaDefault = CategoriaGasto::firstOrCreate(
@@ -49,9 +53,16 @@ class ImportacionController extends Controller
         while (($columna = fgetcsv($handle, 0, ";")) !== FALSE) {
             if (empty($columna[0]) || !isset($columna[3])) continue;
 
-            // 1. Limpieza extrema de Importe
-            $importeLimpio = str_replace(['.', ','], ['', '.'], $columna[3]);
-            $importe = round((float) $importeLimpio, 2); // Redondeamos a 2 decimales para evitar variaciones
+            // 1. Limpieza de Importe — formato europeo: "1.234,56" → 1234.56
+            $raw = trim($columna[3]);
+            // Si hay punto Y coma, el punto es separador de miles → eliminarlo primero
+            if (str_contains($raw, '.') && str_contains($raw, ',')) {
+                $raw = str_replace('.', '', $raw); // quita miles
+                $raw = str_replace(',', '.', $raw); // coma decimal → punto
+            } else {
+                $raw = str_replace(',', '.', $raw); // solo coma decimal
+            }
+            $importe = round((float) $raw, 2);
             
             // 2. Normalización de Fecha
             try {
@@ -66,7 +77,7 @@ class ImportacionController extends Controller
 
             // 4. GENERACIÓN DE HASH REFORZADA
             // Usamos los datos normalizados para que la huella sea SIEMPRE la misma
-            $hashMovimiento = md5($fecha . $descripcionHash . $importe . $user_id);
+            $hashMovimiento = md5($fecha . $descripcionHash . number_format($importe, 2, '.', '') . $user_id);
             // Solo para probar una vez:
             //dd($hashMovimiento, $fecha, $descripcionHash, $importe);
             if ($importe < 0) {
@@ -92,7 +103,16 @@ class ImportacionController extends Controller
                     ]
                 );
             } else {
-                // INGRESO
+                // INGRESO: aplicar reglas de fuente
+                $fuenteIdFinal = $fuenteDefault->id;
+                $descripcionUpper = strtoupper($descripcionOriginal);
+                foreach ($reglasIngresos as $regla) {
+                    if (str_contains($descripcionUpper, strtoupper($regla->palabra_clave))) {
+                        $fuenteIdFinal = $regla->fuente_ingreso_id;
+                        break;
+                    }
+                }
+
                 Ingreso::firstOrCreate(
                     ['hash' => $hashMovimiento],
                     [
@@ -100,7 +120,7 @@ class ImportacionController extends Controller
                         'descripcion' => $descripcionOriginal,
                         'monto' => $importe,
                         'fecha' => $fecha,
-                        'fuente_ingreso_id' => $fuenteDefault->id,
+                        'fuente_ingreso_id' => $fuenteIdFinal,
                     ]
                 );
             }

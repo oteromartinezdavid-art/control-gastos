@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Libro de Operaciones</h2>
-            <a href="{{ route('inversiones.index') }}"
-               class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Volver a la Cartera</a>
+            <a href="#" onclick="history.back(); return false;"
+               class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Volver</a>
         </div>
     </x-slot>
 
@@ -25,7 +25,7 @@
             @endif
 
             {{-- Resumen --}}
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-lg shadow-sm border-b-4 border-[#1e1b4b]">
                     <p class="text-xs font-bold text-gray-500 uppercase">Capital Comprado</p>
                     <p class="text-2xl font-black text-gray-900">{{ number_format($totalInvertido, 2, ',', '.') }}€</p>
@@ -34,106 +34,166 @@
                     <p class="text-xs font-bold text-blue-600 uppercase">Capital Vendido</p>
                     <p class="text-2xl font-black text-blue-700">{{ number_format($totalVendido, 2, ',', '.') }}€</p>
                 </div>
+                {{-- Comisiones (bancaria + bolsa + divisa) --}}
+                @php $totalComisionesSolo = $desglosGastos['bancaria'] + $desglosGastos['bolsa'] + $desglosGastos['divisa']; @endphp
                 <div class="bg-white p-5 rounded-lg shadow-sm border-b-4 border-orange-400">
-                    <p class="text-xs font-bold text-orange-600 uppercase">Comisiones Totales</p>
-                    <p class="text-2xl font-black text-orange-700">{{ number_format($totalComisiones, 2, ',', '.') }}€</p>
+                    <p class="text-xs font-bold text-orange-600 uppercase mb-1">Comisiones</p>
+                    <p class="text-2xl font-black text-orange-700">{{ number_format($totalComisionesSolo, 2, ',', '.') }}€</p>
+                    <div class="mt-3 space-y-1">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Bancaria</span>
+                            <span class="font-semibold text-orange-600">{{ number_format($desglosGastos['bancaria'], 2, ',', '.') }}€</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Bolsa</span>
+                            <span class="font-semibold text-orange-600">{{ number_format($desglosGastos['bolsa'], 2, ',', '.') }}€</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Cambio divisa</span>
+                            <span class="font-semibold text-orange-600">{{ number_format($desglosGastos['divisa'], 2, ',', '.') }}€</span>
+                        </div>
+                    </div>
+                </div>
+                {{-- Impuestos --}}
+                <div class="bg-white p-5 rounded-lg shadow-sm border-b-4 border-red-400">
+                    <p class="text-xs font-bold text-red-600 uppercase mb-1">Impuestos</p>
+                    <p class="text-2xl font-black text-red-700">{{ number_format($desglosGastos['impuestos'], 2, ',', '.') }}€</p>
+                    <p class="text-xs text-gray-400 mt-3">Retenciones y tributos sobre operaciones</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- Formulario nueva operación — colapsable --}}
+            <div x-data="{
+                    open: {{ $errors->any() ? 'true' : 'false' }},
+                    tipo: '{{ old('tipo', 'compra') }}',
+                    cantidad: '',
+                    precio: '',
+                    com_bancaria: '{{ old('comision', 0) }}',
+                    com_bolsa: '{{ old('comision_bolsa', 0) }}',
+                    impuestos: '{{ old('impuestos', 0) }}',
+                    com_divisa: '{{ old('comision_divisa', 0) }}',
+                    get bruto() { return (parseFloat(this.cantidad)||0) * (parseFloat(this.precio)||0); },
+                    get totalGastos() {
+                        return (parseFloat(this.com_bancaria)||0)+(parseFloat(this.com_bolsa)||0)+(parseFloat(this.impuestos)||0)+(parseFloat(this.com_divisa)||0);
+                    },
+                    get neto() { return this.tipo==='compra' ? this.bruto+this.totalGastos : this.bruto-this.totalGastos; }
+                 }"
+                 class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
 
-                {{-- Formulario nueva operación --}}
-                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100"
-                     x-data="{ tipo: '{{ old('tipo', 'compra') }}', bruto: '', comision: 0 }">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 italic">Registrar Operación</h3>
-                    <form action="{{ route('inversiones.operaciones.store') }}" method="POST" class="space-y-4">
+                {{-- Toggle header --}}
+                <button type="button" @click="open = !open"
+                    class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg font-bold text-gray-800">+ Registrar Nueva Operación</span>
+                    </div>
+                    <svg class="h-5 w-5 text-gray-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div x-show="open" x-collapse class="border-t border-gray-100 px-6 pb-6 pt-4">
+                    <form action="{{ route('inversiones.operaciones.store') }}" method="POST">
                         @csrf
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
 
-                        <div>
-                            <x-input-label for="activo_id" value="Activo" />
-                            <select name="activo_id" id="activo_id"
-                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                required>
-                                <option value="">— Selecciona —</option>
-                                @foreach($activos as $activo)
-                                    <option value="{{ $activo->id }}" {{ old('activo_id', $request->activo_id) == $activo->id ? 'selected' : '' }}>
-                                        {{ $activo->ticker }} – {{ $activo->nombre }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @if($activos->isEmpty())
-                                <p class="text-xs text-orange-600 mt-1 font-medium">
-                                    <a href="{{ route('inversiones.activos.index') }}" class="underline">Añade primero un activo</a>
-                                </p>
-                            @endif
-                        </div>
-
-                        <div>
-                            <x-input-label value="Tipo de Operación" />
-                            <div class="mt-2 flex gap-4">
-                                <label class="flex items-center gap-2 cursor-pointer font-medium text-sm"
-                                       :class="tipo === 'compra' ? 'text-emerald-700' : 'text-gray-500'">
-                                    <input type="radio" name="tipo" value="compra" x-model="tipo"
-                                           class="text-emerald-600" {{ old('tipo', 'compra') === 'compra' ? 'checked' : '' }} />
-                                    Compra
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer font-medium text-sm"
-                                       :class="tipo === 'venta' ? 'text-red-600' : 'text-gray-500'">
-                                    <input type="radio" name="tipo" value="venta" x-model="tipo"
-                                           class="text-red-500" {{ old('tipo') === 'venta' ? 'checked' : '' }} />
-                                    Venta
-                                </label>
+                            <div class="lg:col-span-2">
+                                <x-input-label for="activo_id" value="Activo" />
+                                <select name="activo_id" id="activo_id"
+                                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm"
+                                    required>
+                                    <option value="">— Selecciona —</option>
+                                    @foreach($activos as $activo)
+                                        <option value="{{ $activo->id }}" {{ old('activo_id', $request->activo_id) == $activo->id ? 'selected' : '' }}>
+                                            {{ $activo->ticker }} – {{ $activo->nombre }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                        </div>
 
-                        <div>
-                            <x-input-label for="fecha" value="Fecha" />
-                            <x-text-input id="fecha" name="fecha" type="date" class="mt-1 block w-full"
-                                value="{{ old('fecha', date('Y-m-d')) }}" required />
-                        </div>
+                            <div>
+                                <x-input-label value="Tipo" />
+                                <div class="mt-2 flex gap-3">
+                                    <label class="flex items-center gap-1.5 text-sm font-medium cursor-pointer"
+                                           :class="tipo==='compra'?'text-emerald-700':'text-gray-500'">
+                                        <input type="radio" name="tipo" value="compra" x-model="tipo"
+                                               {{ old('tipo','compra')==='compra'?'checked':'' }} /> Compra
+                                    </label>
+                                    <label class="flex items-center gap-1.5 text-sm font-medium cursor-pointer"
+                                           :class="tipo==='venta'?'text-red-600':'text-gray-500'">
+                                        <input type="radio" name="tipo" value="venta" x-model="tipo"
+                                               {{ old('tipo')==='venta'?'checked':'' }} /> Venta
+                                    </label>
+                                </div>
+                            </div>
 
-                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <x-input-label for="fecha" value="Fecha" />
+                                <x-text-input id="fecha" name="fecha" type="date" class="mt-1 block w-full text-sm"
+                                    value="{{ old('fecha', date('Y-m-d')) }}" required />
+                            </div>
+
                             <div>
                                 <x-input-label for="cantidad" value="Unidades" />
                                 <x-text-input id="cantidad" name="cantidad" type="number" step="0.0001" min="0.0001"
-                                    class="mt-1 block w-full" value="{{ old('cantidad') }}" required />
+                                    class="mt-1 block w-full text-sm" x-model="cantidad" value="{{ old('cantidad') }}" required />
                             </div>
+
                             <div>
                                 <x-input-label for="precio_unitario" value="Precio Unit. (€)" />
                                 <x-text-input id="precio_unitario" name="precio_unitario" type="number" step="0.0001" min="0"
-                                    class="mt-1 block w-full" x-model="bruto"
-                                    value="{{ old('precio_unitario') }}" required />
+                                    class="mt-1 block w-full text-sm" x-model="precio" value="{{ old('precio_unitario') }}" required />
                             </div>
                         </div>
 
-                        <div>
-                            <x-input-label for="comision" value="Comisión Bancaria (€)" />
-                            <x-text-input id="comision" name="comision" type="number" step="0.01" min="0"
-                                class="mt-1 block w-full" x-model="comision"
-                                value="{{ old('comision', 0) }}" />
-                            <p class="text-[10px] text-gray-400 mt-1">
-                                Coste/Transmisión neto =
-                                <span class="font-bold text-gray-600" x-text="(parseFloat(bruto)||0) + ' €  ' + (tipo === 'compra' ? '+' : '-') + ' ' + (parseFloat(comision)||0) + ' € comisión'"></span>
-                            </p>
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
+                            <div class="col-span-2 md:col-span-4 lg:col-span-6">
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Gastos de la operación</p>
+                            </div>
+                            <div>
+                                <x-input-label for="comision" value="Com. Bancaria (€)" />
+                                <x-text-input id="comision" name="comision" type="number" step="0.01" min="0"
+                                    class="mt-1 block w-full text-sm" x-model="com_bancaria" value="{{ old('comision', 0) }}" />
+                            </div>
+                            <div>
+                                <x-input-label for="comision_bolsa" value="Com. Bolsa (€)" />
+                                <x-text-input id="comision_bolsa" name="comision_bolsa" type="number" step="0.01" min="0"
+                                    class="mt-1 block w-full text-sm" x-model="com_bolsa" value="{{ old('comision_bolsa', 0) }}" />
+                            </div>
+                            <div>
+                                <x-input-label for="impuestos" value="Impuestos (€)" />
+                                <x-text-input id="impuestos" name="impuestos" type="number" step="0.01" min="0"
+                                    class="mt-1 block w-full text-sm" x-model="impuestos" value="{{ old('impuestos', 0) }}" />
+                            </div>
+                            <div>
+                                <x-input-label for="comision_divisa" value="Com. Divisa (€)" />
+                                <x-text-input id="comision_divisa" name="comision_divisa" type="number" step="0.01" min="0"
+                                    class="mt-1 block w-full text-sm" x-model="com_divisa" value="{{ old('comision_divisa', 0) }}" />
+                            </div>
+                            <div>
+                                <x-input-label for="notas" value="Notas" />
+                                <x-text-input id="notas" name="notas" type="text"
+                                    class="mt-1 block w-full text-sm" value="{{ old('notas') }}" placeholder="Broker..." />
+                            </div>
+                            <div class="flex flex-col justify-end">
+                                <div class="text-[10px] text-gray-400 mb-1">
+                                    Gastos: <span class="font-bold text-orange-600" x-text="totalGastos.toFixed(2)+'€'"></span>
+                                    · Neto: <span class="font-bold text-indigo-700" x-text="neto.toFixed(2)+'€'"></span>
+                                </div>
+                                <button type="submit"
+                                    class="w-full px-4 py-2 text-white text-sm font-bold rounded-lg transition"
+                                    :class="tipo==='venta'?'bg-red-600 hover:bg-red-700':'bg-[#1e1b4b] hover:bg-indigo-800'"
+                                    x-text="tipo==='compra'?'Registrar Compra':'Registrar Venta'">
+                                    Registrar Compra
+                                </button>
+                            </div>
                         </div>
-
-                        <div>
-                            <x-input-label for="notas" value="Notas (opcional)" />
-                            <textarea id="notas" name="notas" rows="2"
-                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm"
-                                placeholder="Broker, número de orden...">{{ old('notas') }}</textarea>
-                        </div>
-
-                        <button type="submit"
-                            class="w-full justify-center inline-flex items-center px-4 py-3 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                            :class="tipo === 'venta' ? 'bg-red-600 hover:bg-red-700 active:bg-red-800' : 'bg-gray-800 hover:bg-gray-700 active:bg-gray-900'">
-                            <span x-text="tipo === 'compra' ? 'Registrar Compra' : 'Registrar Venta'">Registrar Compra</span>
-                        </button>
                     </form>
                 </div>
+            </div>
 
-                {{-- Tabla operaciones --}}
-                <div class="lg:col-span-2 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+            {{-- Tabla operaciones — full width --}}
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
 
                     {{-- Filtros --}}
                     <form method="GET" action="{{ route('inversiones.operaciones.index') }}"
@@ -259,15 +319,19 @@
                         <table class="w-full text-left text-sm">
                             <thead>
                                 <tr class="bg-gray-50 border-b text-gray-600 text-xs uppercase tracking-widest font-bold">
-                                    <th class="px-4 py-3">Fecha</th>
-                                    <th class="px-4 py-3">Activo</th>
-                                    <th class="px-4 py-3 text-center">Tipo</th>
-                                    <th class="px-4 py-3 text-right">Cantidad</th>
-                                    <th class="px-4 py-3 text-right">P. Unit.</th>
-                                    <th class="px-4 py-3 text-right">Comisión</th>
-                                    <th class="px-4 py-3 text-right">Importe Neto</th>
-                                    <th class="px-4 py-3 text-right">P&L FIFO</th>
-                                    <th class="px-4 py-3 text-center">Acc.</th>
+                                    <th class="px-3 py-3">Fecha</th>
+                                    <th class="px-3 py-3">Activo</th>
+                                    <th class="px-3 py-3 text-center">Tipo</th>
+                                    <th class="px-3 py-3 text-right">Uds.</th>
+                                    <th class="px-3 py-3 text-right">P. Unit.</th>
+                                    <th class="px-3 py-3 text-right text-orange-500">Com. Banc.</th>
+                                    <th class="px-3 py-3 text-right text-orange-500">Com. Bolsa</th>
+                                    <th class="px-3 py-3 text-right text-orange-500">Impuestos</th>
+                                    <th class="px-3 py-3 text-right text-orange-500">Com. Divisa</th>
+                                    <th class="px-3 py-3 text-right text-orange-700">Total Gastos</th>
+                                    <th class="px-3 py-3 text-right">Neto</th>
+                                    <th class="px-3 py-3 text-right">P&L FIFO</th>
+                                    <th class="px-3 py-3 text-center">Acc.</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -276,58 +340,75 @@
                                     $isCompra = $op->tipo === 'compra';
                                 @endphp
                                 <tr class="hover:bg-gray-50/50 {{ $isCompra ? '' : 'bg-red-50/20' }}">
-                                    <td class="px-4 py-3 text-gray-500 text-xs font-mono">
+                                    <td class="px-3 py-3 text-gray-500 text-xs font-mono whitespace-nowrap">
                                         {{ $op->fecha->format('d/m/Y') }}
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <span class="font-black text-gray-900">{{ $op->activo->ticker }}</span>
+                                    <td class="px-3 py-3">
+                                        <a href="{{ route('inversiones.activos.show', $op->activo_id) }}"
+                                           class="font-black text-indigo-700 hover:underline">{{ $op->activo->ticker }}</a>
                                         @if($op->notas)
-                                            <span class="block text-[10px] text-gray-400 truncate max-w-[120px]">{{ $op->notas }}</span>
+                                            <span class="block text-[10px] text-gray-400 truncate max-w-[80px]">{{ $op->notas }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-center">
+                                    <td class="px-3 py-3 text-center">
                                         @if($isCompra)
-                                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase">
-                                                Compra
-                                            </span>
+                                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase">Compra</span>
                                         @else
-                                            <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-black uppercase">
-                                                Venta
-                                            </span>
+                                            <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-black uppercase">Venta</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-right font-mono text-gray-700">
+                                    <td class="px-3 py-3 text-right font-mono text-gray-700 text-xs">
                                         {{ number_format((float)$op->cantidad, 4, ',', '.') }}
                                     </td>
-                                    <td class="px-4 py-3 text-right font-mono text-gray-700">
+                                    <td class="px-3 py-3 text-right font-mono text-gray-700 text-xs">
                                         {{ number_format((float)$op->precio_unitario, 4, ',', '.') }}€
                                     </td>
-                                    <td class="px-4 py-3 text-right text-orange-600 font-medium">
-                                        {{ number_format((float)$op->comision, 2, ',', '.') }}€
+                                    <td class="px-3 py-3 text-right text-orange-400 font-mono text-xs">
+                                        {{ (float)$op->comision > 0 ? number_format((float)$op->comision,2,',','.').'€' : '—' }}
                                     </td>
-                                    <td class="px-4 py-3 text-right font-bold text-gray-900">
+                                    <td class="px-3 py-3 text-right text-orange-400 font-mono text-xs">
+                                        {{ (float)$op->comision_bolsa > 0 ? number_format((float)$op->comision_bolsa,2,',','.').'€' : '—' }}
+                                    </td>
+                                    <td class="px-3 py-3 text-right text-orange-400 font-mono text-xs">
+                                        {{ (float)$op->impuestos > 0 ? number_format((float)$op->impuestos,2,',','.').'€' : '—' }}
+                                    </td>
+                                    <td class="px-3 py-3 text-right text-orange-400 font-mono text-xs">
+                                        {{ (float)$op->comision_divisa > 0 ? number_format((float)$op->comision_divisa,2,',','.').'€' : '—' }}
+                                    </td>
+                                    <td class="px-3 py-3 text-right text-orange-700 font-bold text-xs">
+                                        {{ number_format($op->total_gastos,2,',','.')}}€
+                                    </td>
+                                    <td class="px-3 py-3 text-right font-bold text-gray-900 text-xs">
                                         {{ number_format($op->importe_neto, 2, ',', '.') }}€
                                     </td>
-                                    <td class="px-4 py-3 text-right">
+                                    <td class="px-3 py-3 text-right">
                                         @if($op->tipo === 'venta' && isset($op->pnl))
                                             @php $pnlSign = $op->pnl >= 0 ? '+' : ''; @endphp
-                                            <span class="font-bold {{ $op->pnl >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+                                            <span class="font-bold text-xs {{ $op->pnl >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
                                                 {{ $pnlSign }}{{ number_format($op->pnl, 2, ',', '.') }}€
                                             </span>
                                         @else
                                             <span class="text-gray-300 text-xs">—</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-center">
-                                        <form action="{{ route('inversiones.operaciones.destroy', $op->id) }}" method="POST"
-                                              onsubmit="return confirm('¿Eliminar esta operación? El cálculo FIFO se recalculará.')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="text-red-400 hover:text-red-700 transition">
+                                    <td class="px-3 py-3 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <a href="{{ route('inversiones.operaciones.edit', $op->id) }}"
+                                               class="text-indigo-400 hover:text-indigo-700 transition" title="Editar">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
-                                            </button>
-                                        </form>
+                                            </a>
+                                            <form action="{{ route('inversiones.operaciones.destroy', $op->id) }}" method="POST"
+                                                  onsubmit="return confirm('¿Eliminar esta operación? El cálculo FIFO se recalculará.')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="text-red-400 hover:text-red-700 transition" title="Eliminar">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -336,7 +417,6 @@
                     </div>
                     @endif
                 </div>
-            </div>
 
             {{-- Nota metodológica --}}
             <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 text-sm text-indigo-700">
@@ -438,7 +518,7 @@
                                 <td>Venta — {{ $op->notas ?: 'Transmisión de acciones' }}</td>
                                 <td class="tr">{{ number_format((float)$op->cantidad, 4, ',', '.') }}</td>
                                 <td class="tr">{{ number_format((float)$op->precio_unitario, 4, ',', '.') }}€</td>
-                                <td class="tr fi-loss">− {{ number_format((float)$op->comision, 2, ',', '.') }}€</td>
+                                <td class="tr fi-loss" title="Bancaria: {{ number_format((float)$op->comision,2,',','.') }}€ | Bolsa: {{ number_format((float)$op->comision_bolsa,2,',','.') }}€ | Impuestos: {{ number_format((float)$op->impuestos,2,',','.') }}€ | Divisa: {{ number_format((float)$op->comision_divisa,2,',','.') }}€">− {{ number_format($op->total_gastos, 2, ',', '.') }}€</td>
                                 <td class="tr"><strong>{{ number_format($vd['valor_transmision'], 2, ',', '.') }}€</strong></td>
                             </tr>
                         </tbody>

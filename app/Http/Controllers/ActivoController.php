@@ -45,7 +45,16 @@ class ActivoController extends Controller
         $lotes        = $this->inversionService->getLotesDisponibles($userId, $activo->id);
         $cantidad     = array_sum(array_column($lotes, 'cantidad_disponible'));
         $precioMedio  = $this->inversionService->getPrecioMedio($userId, $activo->id);
-        $cotizacion   = $this->inversionService->getCotizacion($activo->ticker);
+
+        $infoMoneda       = $this->inversionService->getCotizacionConMoneda($activo->ticker);
+        $moneda           = $infoMoneda['moneda'];
+        $cotizacionNativa = $infoMoneda['precio'];
+        $cotizacion       = $this->inversionService->getCotizacionEnEur($activo->ticker);
+
+        if ($activo->moneda !== $moneda) {
+            $activo->update(['moneda' => $moneda]);
+        }
+
         $invActual    = $cantidad * $precioMedio;
         $valorActual  = $cotizacion !== null ? $cantidad * $cotizacion : null;
         $pnlLatente   = $valorActual !== null ? $valorActual - $invActual : null;
@@ -55,19 +64,25 @@ class ActivoController extends Controller
 
         // KPIs históricos
         $totalInvertido  = $operaciones->where('tipo', 'compra')
-            ->sum(fn($o) => (float)$o->cantidad * (float)$o->precio_unitario + (float)$o->comision);
+            ->sum(fn($o) => (float)$o->cantidad * (float)$o->precio_unitario + $o->total_gastos);
         $pnlRealizado    = $operaciones->where('tipo', 'venta')->sum('pnl');
         $totalDivNeto    = $dividendos->sum('monto_neto');
         $totalDivBruto   = $dividendos->sum('monto_bruto');
-        $totalComisiones = $operaciones->sum('comision');
+        $totalComisiones = $operaciones->sum('total_gastos');
+        $desglosGastos   = [
+            'bancaria' => $operaciones->sum(fn($o) => (float)$o->comision),
+            'bolsa'    => $operaciones->sum(fn($o) => (float)$o->comision_bolsa),
+            'impuestos'=> $operaciones->sum(fn($o) => (float)$o->impuestos),
+            'divisa'   => $operaciones->sum(fn($o) => (float)$o->comision_divisa),
+        ];
         $totalReturn     = $pnlRealizado + ($pnlLatente ?? 0) + $totalDivNeto;
 
         return view('inversiones.activos.show', compact(
             'activo', 'operaciones', 'dividendos', 'lotes',
-            'cantidad', 'precioMedio', 'cotizacion',
+            'cantidad', 'precioMedio', 'cotizacion', 'cotizacionNativa', 'moneda',
             'invActual', 'valorActual', 'pnlLatente', 'pnlLatentePct',
             'totalInvertido', 'pnlRealizado', 'totalDivNeto', 'totalDivBruto',
-            'totalComisiones', 'totalReturn'
+            'totalComisiones', 'desglosGastos', 'totalReturn'
         ));
     }
 

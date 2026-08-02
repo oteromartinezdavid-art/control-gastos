@@ -24,6 +24,13 @@ class InversionController extends Controller
         return view('inversiones.index', compact('posiciones', 'kpis', 'chartLabels', 'chartData', 'chartColors'));
     }
 
+    public function proyeccion()
+    {
+        $userId = auth()->id();
+        $cartera = $this->inversionService->getCarteraEnFecha($userId, now()->format('Y-m-d'));
+        return view('inversiones.proyeccion', ['valorCarteraActual' => round($cartera['total_coste'], 2)]);
+    }
+
     public function getCotizacion(string $ticker): JsonResponse
     {
         $precio = $this->inversionService->getCotizacion(strtoupper($ticker));

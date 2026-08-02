@@ -20,7 +20,7 @@
                     <x-dropdown align="left" width="48" contentClasses="py-1 bg-[#1e1b4b] border border-indigo-700">
                         <x-slot name="trigger">
                             <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none
-                                {{ request()->routeIs('gastos.*') || request()->routeIs('ingresos.*') || request()->routeIs('importar.*')
+                                {{ request()->routeIs('gastos.*') || request()->routeIs('ingresos.*') || request()->routeIs('importar.*') || request()->routeIs('presupuesto.*')
                                     ? 'border-indigo-300 text-white'
                                     : 'border-transparent text-indigo-200 hover:text-white hover:border-indigo-300' }}">
                                 Finanzas
@@ -32,6 +32,7 @@
                         <x-slot name="content">
                             <a href="{{ route('gastos.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Mis Gastos</a>
                             <a href="{{ route('ingresos.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Mis Ingresos</a>
+                            <a href="{{ route('presupuesto.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Presupuesto</a>
                             <hr class="border-indigo-700 my-1">
                             <a href="{{ route('importar.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Importar CSV</a>
                         </x-slot>
@@ -56,15 +57,30 @@
                         </x-slot>
                     </x-dropdown>
 
-                    <x-nav-link :href="route('inversiones.index')" :active="request()->routeIs('inversiones.*')">
-                        {{ __('Inversiones') }}
-                    </x-nav-link>
+                    <x-dropdown align="left" width="48" contentClasses="py-1 bg-[#1e1b4b] border border-indigo-700">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none
+                                {{ request()->routeIs('inversiones.*')
+                                    ? 'border-indigo-300 text-white'
+                                    : 'border-transparent text-indigo-200 hover:text-white hover:border-indigo-300' }}">
+                                Inversiones
+                                <svg class="ms-1 h-4 w-4 fill-current" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <a href="{{ route('inversiones.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Mi Cartera</a>
+                            <a href="{{ route('inversiones.resumen-anual') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Resumen Anual</a>
+                            <a href="{{ route('inversiones.proyeccion') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Proyección</a>
+                        </x-slot>
+                    </x-dropdown>
 
                     {{-- Configuración dropdown --}}
                     <x-dropdown align="left" width="48" contentClasses="py-1 bg-[#1e1b4b] border border-indigo-700">
                         <x-slot name="trigger">
                             <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none
-                                {{ request()->routeIs('categorias.*') || request()->routeIs('fuentes.*') || request()->routeIs('reglas.*')
+                                {{ request()->routeIs('categorias.*') || request()->routeIs('fuentes.*') || request()->routeIs('reglas.*') || request()->routeIs('reglas-ingresos.*')
                                     ? 'border-indigo-300 text-white'
                                     : 'border-transparent text-indigo-200 hover:text-white hover:border-indigo-300' }}">
                                 Configuración
@@ -76,7 +92,10 @@
                         <x-slot name="content">
                             <a href="{{ route('categorias.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Categorías de Gastos</a>
                             <a href="{{ route('fuentes.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Fuentes de Ingresos</a>
-                            <a href="{{ route('reglas.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Reglas de Importación</a>
+                            <a href="{{ route('reglas.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Reglas Importación Gastos</a>
+                            <a href="{{ route('reglas-ingresos.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Reglas Importación Ingresos</a>
+                            <hr class="border-indigo-700 my-1">
+                            <a href="{{ route('backup.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Copias de Seguridad</a>
                         </x-slot>
                     </x-dropdown>
                 </div>
@@ -142,6 +161,9 @@
             <x-responsive-nav-link :href="route('ingresos.index')" :active="request()->routeIs('ingresos.*')">
                 {{ __('Mis Ingresos') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('presupuesto.index')" :active="request()->routeIs('presupuesto.*')">
+                {{ __('Presupuesto') }}
+            </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('importar.index')" :active="request()->routeIs('importar.*')">
                 {{ __('Importar CSV') }}
             </x-responsive-nav-link>
@@ -167,6 +189,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('reglas.index')" :active="request()->routeIs('reglas.*')">
                 {{ __('Reglas de Importación') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('backup.index')" :active="request()->routeIs('backup.*')">
+                {{ __('Copias de Seguridad') }}
             </x-responsive-nav-link>
         </div>
 

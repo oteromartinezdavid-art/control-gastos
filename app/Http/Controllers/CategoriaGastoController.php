@@ -75,11 +75,20 @@ class CategoriaGastoController extends Controller
             abort(403);
         }
 
-        // 2. Validación: Comprobar si tiene gastos asociados
-        // Asumiendo que en tu modelo CategoriaGasto tienes la relación 'gastos'
+        // 2. Validación: comprobar registros vinculados antes de borrar
         if ($categoria->gastos()->count() > 0) {
             return redirect()->route('categorias.index')
-                ->with('error', 'No se puede eliminar la categoría "' . $categoria->nombre . '" porque tiene gastos asociados. Primero elimina o reasigna esos gastos.');
+                ->with('error', 'No se puede eliminar "' . $categoria->nombre . '": tiene gastos asociados. Reasígnalos primero.');
+        }
+
+        if ($categoria->gastosFijos()->count() > 0) {
+            return redirect()->route('categorias.index')
+                ->with('error', 'No se puede eliminar "' . $categoria->nombre . '": tiene gastos fijos asociados. Reasígnalos primero.');
+        }
+
+        if ($categoria->financiaciones()->count() > 0) {
+            return redirect()->route('categorias.index')
+                ->with('error', 'No se puede eliminar "' . $categoria->nombre . '": tiene financiaciones asociadas. Reasígnalas primero.');
         }
 
         // 3. Borrado si está limpia

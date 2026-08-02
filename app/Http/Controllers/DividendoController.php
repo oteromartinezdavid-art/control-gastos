@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activo;
 use App\Models\Dividendo;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class DividendoController extends Controller
 {
@@ -34,7 +35,7 @@ class DividendoController extends Controller
         $userId = auth()->id();
 
         $request->validate([
-            'activo_id'   => 'required|exists:activos,id',
+            'activo_id'   => ['required', Rule::exists('activos', 'id')->where('user_id', auth()->id())],
             'fecha'       => 'required|date',
             'monto_bruto' => 'required|numeric|min:0',
             'retencion'   => 'nullable|numeric|min:0',

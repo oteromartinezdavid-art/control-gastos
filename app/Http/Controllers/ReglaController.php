@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ReglaCategorizacion;
 use App\Models\CategoriaGasto;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ReglaController extends Controller
 {
@@ -21,7 +22,7 @@ class ReglaController extends Controller
     {
         $request->validate([
             'palabra_clave' => 'required|string|max:255',
-            'categoria_id' => 'required|exists:categoria_gastos,id',
+            'categoria_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
         ]);
 
         ReglaCategorizacion::create([
@@ -35,9 +36,8 @@ class ReglaController extends Controller
 
     public function destroy(ReglaCategorizacion $regla)
     {
-        if ($regla->user_id === auth()->id()) {
-            $regla->delete();
-        }
+        abort_if($regla->user_id !== auth()->id(), 403);
+        $regla->delete();
         return redirect()->back()->with('success', 'Regla eliminada.');
     }
 }

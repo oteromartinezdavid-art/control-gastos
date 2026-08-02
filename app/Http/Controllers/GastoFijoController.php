@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\GastoFijo;
 use App\Models\Gasto;
 use App\Models\CategoriaGasto;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class GastoFijoController extends Controller
@@ -14,24 +15,27 @@ class GastoFijoController extends Controller
     {
         $user_id = auth()->id();
 
-        $mes  = (int) $request->get('mes',  now()->month);
-        $anio = (int) $request->get('anio', now()->year);
-        $fechaObjeto = Carbon::create($anio, $mes, 1);
+        $mes  = max(1, min(12,   (int) $request->get('mes',  now()->month)));
+        $anio = max(2000, min(2100, (int) $request->get('anio', now()->year)));
+        $fechaObjeto   = Carbon::create($anio, $mes, 1);
+        $inicioDeMes   = $fechaObjeto->copy()->startOfMonth();
+        $finDeMes      = $fechaObjeto->copy()->endOfMonth();
 
-        // Gastos fijos activos del usuario, filtrados al mes seleccionado
+        // Solo gastos activos en el rango del mes seleccionado
         $gastosFijos = GastoFijo::where('user_id', $user_id)
             ->with('categoriaGasto')
+            ->where('fecha_inicio', '<=', $finDeMes)
+            ->where(function ($q) use ($inicioDeMes) {
+                $q->whereNull('fecha_fin')
+                  ->orWhere('fecha_fin', '>=', $inicioDeMes);
+            })
             ->orderBy('dia_pago')
             ->get()
             ->filter(function ($fijo) use ($mes) {
-                // meses_cobro vacío o null → mensual (aparece siempre)
-                if (empty($fijo->meses_cobro)) {
-                    return true;
-                }
+                if (empty($fijo->meses_cobro)) return true;
                 return in_array($mes, array_map('intval', $fijo->meses_cobro));
             });
 
-        // Gastos reales del mes para detectar pagos
         $gastosRealesDelMes = Gasto::where('user_id', $user_id)
             ->whereMonth('fecha', $mes)
             ->whereYear('fecha', $anio)
@@ -42,13 +46,9 @@ class GastoFijoController extends Controller
         $listadoFinal = $gastosFijos->map(function ($fijo) use ($gastosRealesDelMes, $nombresMeses) {
 
             $pagoRealizado = $gastosRealesDelMes->first(function ($gastoReal) use ($fijo) {
-                return str_contains(
-                    strtolower($gastoReal->descripcion),
-                    strtolower($fijo->nombre)
-                );
+                return str_contains(strtolower($gastoReal->descripcion), strtolower($fijo->nombre));
             });
 
-            // Etiqueta de meses de cobro (solo para no-mensuales)
             $etiquetaMeses = null;
             if (!empty($fijo->meses_cobro)) {
                 $sorted = array_map('intval', $fijo->meses_cobro);
@@ -57,15 +57,18 @@ class GastoFijoController extends Controller
             }
 
             return (object) [
-                'id'             => $fijo->id,
-                'nombre'         => $fijo->nombre,
-                'dia_pago'       => $fijo->dia_pago,
-                'monto_previsto' => $fijo->monto_previsto,
-                'categoria'      => $fijo->categoriaGasto,
-                'etiqueta_meses' => $etiquetaMeses,
-                'pagado'         => !is_null($pagoRealizado),
-                'monto_real'     => $pagoRealizado ? $pagoRealizado->monto : null,
-                'fecha_pago_real'=> $pagoRealizado ? $pagoRealizado->fecha : null,
+                'id'              => $fijo->id,
+                'nombre'          => $fijo->nombre,
+                'dia_pago'        => $fijo->dia_pago,
+                'monto_previsto'  => $fijo->monto_previsto,
+                'categoria'       => $fijo->categoriaGasto,
+                'etiqueta_meses'  => $etiquetaMeses,
+                'pagado'          => !is_null($pagoRealizado),
+                'monto_real'      => $pagoRealizado ? $pagoRealizado->monto : null,
+                'fecha_pago_real' => $pagoRealizado ? $pagoRealizado->fecha : null,
+                'fecha_inicio'    => $fijo->fecha_inicio,
+                'fecha_fin'       => $fijo->fecha_fin,
+                'dado_de_baja'    => !is_null($fijo->fecha_fin),
             ];
         });
 
@@ -76,12 +79,8 @@ class GastoFijoController extends Controller
         $categorias = CategoriaGasto::where('user_id', $user_id)->get();
 
         return view('gastos-fijos.index', compact(
-            'listadoFinal',
-            'totalPrevisto',
-            'totalPagado',
-            'pendienteCobro',
-            'fechaObjeto',
-            'categorias'
+            'listadoFinal', 'totalPrevisto', 'totalPagado', 'pendienteCobro',
+            'fechaObjeto', 'categorias'
         ));
     }
 
@@ -91,9 +90,11 @@ class GastoFijoController extends Controller
             'nombre'             => 'required|string|max:255',
             'monto_previsto'     => 'required|numeric|min:0',
             'dia_pago'           => 'required|integer|between:1,31',
-            'categoria_gasto_id' => 'required|exists:categoria_gastos,id',
+            'categoria_gasto_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
             'meses_cobro'        => 'nullable|array',
             'meses_cobro.*'      => 'integer|between:1,12',
+            'fecha_inicio'       => 'required|date',
+            'fecha_fin'          => 'nullable|date|after_or_equal:fecha_inicio',
         ]);
 
         GastoFijo::create([
@@ -103,6 +104,8 @@ class GastoFijoController extends Controller
             'dia_pago'           => $request->dia_pago,
             'categoria_gasto_id' => $request->categoria_gasto_id,
             'meses_cobro'        => !empty($request->meses_cobro) ? array_map('intval', $request->meses_cobro) : null,
+            'fecha_inicio'       => $request->fecha_inicio,
+            'fecha_fin'          => $request->fecha_fin ?: null,
         ]);
 
         return redirect()->back()->with('success', 'Gasto fijo configurado correctamente.');
@@ -111,9 +114,7 @@ class GastoFijoController extends Controller
     public function edit(GastoFijo $gastoFijo)
     {
         abort_if($gastoFijo->user_id !== auth()->id(), 403);
-
         $categorias = CategoriaGasto::where('user_id', auth()->id())->get();
-
         return view('gastos-fijos.edit', compact('gastoFijo', 'categorias'));
     }
 
@@ -125,9 +126,11 @@ class GastoFijoController extends Controller
             'nombre'             => 'required|string|max:255',
             'monto_previsto'     => 'required|numeric|min:0',
             'dia_pago'           => 'required|integer|between:1,31',
-            'categoria_gasto_id' => 'required|exists:categoria_gastos,id',
+            'categoria_gasto_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
             'meses_cobro'        => 'nullable|array',
             'meses_cobro.*'      => 'integer|between:1,12',
+            'fecha_inicio'       => 'required|date',
+            'fecha_fin'          => 'nullable|date|after_or_equal:fecha_inicio',
         ]);
 
         $gastoFijo->update([
@@ -136,9 +139,20 @@ class GastoFijoController extends Controller
             'dia_pago'           => $request->dia_pago,
             'categoria_gasto_id' => $request->categoria_gasto_id,
             'meses_cobro'        => !empty($request->meses_cobro) ? array_map('intval', $request->meses_cobro) : null,
+            'fecha_inicio'       => $request->fecha_inicio,
+            'fecha_fin'          => $request->fecha_fin ?: null,
         ]);
 
         return redirect()->route('gastos-fijos.index')->with('success', 'Gasto fijo actualizado correctamente.');
+    }
+
+    public function darDeBaja(GastoFijo $gastoFijo)
+    {
+        abort_if($gastoFijo->user_id !== auth()->id(), 403);
+
+        $gastoFijo->update(['fecha_fin' => now()->toDateString()]);
+
+        return redirect()->back()->with('success', 'Gasto fijo dado de baja. El histórico se conserva.');
     }
 
     public function destroy(GastoFijo $gastoFijo)
@@ -147,6 +161,6 @@ class GastoFijoController extends Controller
 
         $gastoFijo->delete();
 
-        return redirect()->back()->with('success', 'Gasto fijo eliminado correctamente.');
+        return redirect()->back()->with('success', 'Gasto fijo eliminado definitivamente.');
     }
 }

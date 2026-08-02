@@ -27,7 +27,16 @@ class CategoriaGasto extends Model
 
     public function gastos()
     {
-        // Una categoría tiene muchos gastos
         return $this->hasMany(Gasto::class, 'categoria_id');
+    }
+
+    public function gastosFijos()
+    {
+        return $this->hasMany(GastoFijo::class, 'categoria_gasto_id');
+    }
+
+    public function financiaciones()
+    {
+        return $this->hasMany(Financiacion::class, 'categoria_gasto_id');
     }
 }

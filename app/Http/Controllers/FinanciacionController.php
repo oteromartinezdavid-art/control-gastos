@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Financiacion;
 use App\Models\Gasto;
 use App\Models\CategoriaGasto;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class FinanciacionController extends Controller
@@ -14,32 +15,8 @@ class FinanciacionController extends Controller
     {
         $user_id = auth()->id();
 
-        // Auto-detección: para cada financiación busca meses con pago detectado
-        // y decrementa cuotas_pendientes solo por los meses aún no procesados.
-        // meses_procesados actúa como registro idempotente: nunca se resta dos veces
-        // el mismo mes, aunque se importe el mismo CSV varias veces.
-        $todas = Financiacion::where('user_id', $user_id)->get();
-
-        foreach ($todas as $fin) {
-            if ($fin->cuotas_pendientes <= 0) continue;
-
-            $mesesConPago = Gasto::where('user_id', $user_id)
-                ->whereRaw('LOWER(descripcion) LIKE ?', ['%' . strtolower($fin->nombre) . '%'])
-                ->get()
-                ->map(fn($g) => Carbon::parse($g->fecha)->format('Y-m'))
-                ->unique()
-                ->values()
-                ->toArray();
-
-            $yaProcesados  = $fin->meses_procesados ?? [];
-            $nuevos        = array_values(array_diff($mesesConPago, $yaProcesados));
-
-            if (!empty($nuevos)) {
-                $fin->cuotas_pendientes = max(0, $fin->cuotas_pendientes - count($nuevos));
-                $fin->meses_procesados  = array_merge($yaProcesados, $nuevos);
-                $fin->save();
-            }
-        }
+        // Sincronizar cuotas antes de mostrar (idempotente: solo procesa meses nuevos)
+        $this->sincronizarCuotas($user_id);
 
         // Construir listado con estado del mes actual
         $mesActual  = now()->month;
@@ -103,7 +80,7 @@ class FinanciacionController extends Controller
             'cuota_mensual'      => 'required|numeric|min:0',
             'cuotas_pendientes'  => 'required|integer|min:1',
             'dia_cobro'          => 'required|integer|between:1,31',
-            'categoria_gasto_id' => 'required|exists:categoria_gastos,id',
+            'categoria_gasto_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
         ]);
 
         Financiacion::create([
@@ -121,7 +98,7 @@ class FinanciacionController extends Controller
 
     public function edit(Financiacion $financiacion)
     {
-        abort_if($financiacion->user_id != auth()->id(), 403);
+        abort_if($financiacion->user_id !== auth()->id(), 403);
 
         $categorias = CategoriaGasto::where('user_id', auth()->id())->get();
 
@@ -130,7 +107,7 @@ class FinanciacionController extends Controller
 
     public function update(Request $request, Financiacion $financiacion)
     {
-        abort_if($financiacion->user_id != auth()->id(), 403);
+        abort_if($financiacion->user_id !== auth()->id(), 403);
 
         $request->validate([
             'nombre'             => 'required|string|max:255',
@@ -138,7 +115,7 @@ class FinanciacionController extends Controller
             'cuota_mensual'      => 'required|numeric|min:0',
             'cuotas_pendientes'  => 'required|integer|min:0',
             'dia_cobro'          => 'required|integer|between:1,31',
-            'categoria_gasto_id' => 'required|exists:categoria_gastos,id',
+            'categoria_gasto_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
         ]);
 
         $financiacion->update([
@@ -155,10 +132,43 @@ class FinanciacionController extends Controller
 
     public function destroy(Financiacion $financiacion)
     {
-        abort_if($financiacion->user_id != auth()->id(), 403);
+        abort_if($financiacion->user_id !== auth()->id(), 403);
 
         $financiacion->delete();
 
         return redirect()->back()->with('success', 'Financiación eliminada correctamente.');
+    }
+
+    /**
+     * Detects paid months for each financing by matching expense descriptions
+     * and decrements cuotas_pendientes for newly found months.
+     * Idempotent: meses_procesados prevents double-counting the same month.
+     * Extracted from index() so GET stays semantically read-only in intent,
+     * and this logic can also be triggered after CSV imports if needed.
+     */
+    private function sincronizarCuotas(int $userId): void
+    {
+        $todas = Financiacion::where('user_id', $userId)->get();
+
+        foreach ($todas as $fin) {
+            if ($fin->cuotas_pendientes <= 0) continue;
+
+            $mesesConPago = Gasto::where('user_id', $userId)
+                ->whereRaw('LOWER(descripcion) LIKE ?', ['%' . strtolower($fin->nombre) . '%'])
+                ->get()
+                ->map(fn($g) => Carbon::parse($g->fecha)->format('Y-m'))
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $yaProcesados = $fin->meses_procesados ?? [];
+            $nuevos       = array_values(array_diff($mesesConPago, $yaProcesados));
+
+            if (!empty($nuevos)) {
+                $fin->cuotas_pendientes = max(0, $fin->cuotas_pendientes - count($nuevos));
+                $fin->meses_procesados  = array_merge($yaProcesados, $nuevos);
+                $fin->save();
+            }
+        }
     }
 }

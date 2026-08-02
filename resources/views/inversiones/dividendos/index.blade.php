@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Módulo de Dividendos</h2>
-            <a href="{{ route('inversiones.index') }}"
-               class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Volver a la Cartera</a>
+            <a href="#" onclick="history.back(); return false;"
+               class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Volver</a>
         </div>
     </x-slot>
 

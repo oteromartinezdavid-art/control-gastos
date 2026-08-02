@@ -16,10 +16,14 @@ class GastoFijo extends Model
         'monto_previsto',
         'dia_pago',
         'meses_cobro',
+        'fecha_inicio',
+        'fecha_fin',
     ];
 
     protected $casts = [
-        'meses_cobro' => 'array',
+        'meses_cobro'  => 'array',
+        'fecha_inicio' => 'date',
+        'fecha_fin'    => 'date',
     ];
 
     // Relación con el usuario

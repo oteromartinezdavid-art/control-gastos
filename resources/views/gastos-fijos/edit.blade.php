@@ -89,6 +89,25 @@
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="fecha_inicio" value="Fecha Inicio" />
+                            <x-text-input id="fecha_inicio" name="fecha_inicio" type="date"
+                                class="mt-1 block w-full"
+                                value="{{ old('fecha_inicio', $gastoFijo->fecha_inicio?->format('Y-m-d')) }}" required />
+                            <p class="text-xs text-gray-400 mt-1">Desde cuándo pagas este gasto</p>
+                            <x-input-error :messages="$errors->get('fecha_inicio')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="fecha_fin" value="Fecha Fin (opcional)" />
+                            <x-text-input id="fecha_fin" name="fecha_fin" type="date"
+                                class="mt-1 block w-full"
+                                value="{{ old('fecha_fin', $gastoFijo->fecha_fin?->format('Y-m-d')) }}" />
+                            <p class="text-xs text-gray-400 mt-1">Dejar vacío si sigue activo</p>
+                            <x-input-error :messages="$errors->get('fecha_fin')" class="mt-2" />
+                        </div>
+                    </div>
+
                     <div class="flex items-center gap-3 pt-2">
                         <x-primary-button>Guardar Cambios</x-primary-button>
                         <a href="{{ route('gastos-fijos.index') }}"

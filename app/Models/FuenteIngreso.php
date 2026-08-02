@@ -10,7 +10,7 @@ class FuenteIngreso extends Model
     use HasFactory;
 
     // Estos son los campos que Laravel permitirá guardar mediante FuenteIngreso::create()
-    protected $fillable = ['user_id', 'nombre'];
+    protected $fillable = ['user_id', 'nombre', 'color'];
 
     /**
      * Relación: Una categoría pertenece a un usuario.

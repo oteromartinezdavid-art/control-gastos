@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Activos Financieros</h2>
-            <a href="{{ route('inversiones.index') }}"
-               class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Volver a la Cartera</a>
+            <a href="#" onclick="history.back(); return false;"
+               class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Volver</a>
         </div>
     </x-slot>
 
@@ -78,6 +78,9 @@
                                 <template x-if="editando !== {{ $activo->id }}">
                                     <td class="px-6 py-4">
                                         <span class="font-black text-[#1e1b4b] tracking-wide">{{ $activo->ticker }}</span>
+                                        @if($activo->moneda && $activo->moneda !== 'EUR')
+                                            <span class="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold">{{ $activo->moneda }}</span>
+                                        @endif
                                     </td>
                                 </template>
                                 <template x-if="editando !== {{ $activo->id }}">

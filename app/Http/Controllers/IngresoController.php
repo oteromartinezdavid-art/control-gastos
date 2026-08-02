@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Ingreso;          
-use App\Models\FuenteIngreso;    
+use App\Models\Ingreso;
+use App\Models\FuenteIngreso;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class IngresoController extends Controller
@@ -62,7 +63,7 @@ class IngresoController extends Controller
             ->when($request->filled('fecha_fin'), fn($q) => $q->where('ingresos.fecha', '<=', $request->fecha_fin))
             ->when($request->filled('fuente_ingreso_id'), fn($q) => $q->where('ingresos.fuente_ingreso_id', $request->fuente_ingreso_id))
             ->when($request->filled('descripcion'), fn($q) => $q->where('ingresos.descripcion', 'like', '%' . $request->descripcion . '%'))
-            ->selectRaw('fuente_ingresos.nombre as fuente_nombre, SUM(monto) as total')
+            ->selectRaw('fuente_ingresos.nombre as fuente_nombre, fuente_ingresos.color as fuente_color, SUM(monto) as total')
             ->groupBy('fuente_ingresos.nombre')
             ->get();
 
@@ -81,7 +82,7 @@ class IngresoController extends Controller
         $request->validate([
             'descripcion' => 'required|string',
             'monto' => 'required|numeric',
-            'fuente_ingreso_id' => 'required|exists:fuente_ingresos,id',
+            'fuente_ingreso_id' => ['required', Rule::exists('fuente_ingresos', 'id')->where('user_id', auth()->id())],
             'fecha' => 'required|date',
         ]);
 
@@ -107,7 +108,7 @@ class IngresoController extends Controller
         $validated = $request->validate([
             'descripcion' => 'required|string',
             'monto' => 'required|numeric',
-            'fuente_ingreso_id' => 'required|exists:fuente_ingresos,id',
+            'fuente_ingreso_id' => ['required', Rule::exists('fuente_ingresos', 'id')->where('user_id', auth()->id())],
             'fecha' => 'required|date',
         ]);
 
@@ -116,21 +117,26 @@ class IngresoController extends Controller
 
         $ingreso->update($validated);
 
-        return redirect()->route('ingresos.index')->with('success', 'Ingreso actualizado correctamente');
+        $params = array_filter(['mes' => $request->_mes, 'anio' => $request->_anio]);
+        return redirect()->route('ingresos.index', $params)->with('success', 'Ingreso actualizado correctamente');
     }
 
     public function destroy(Ingreso $ingreso)
     {
-        if ($ingreso->user_id === auth()->id()) {
-            $ingreso->delete();
-        }
-        return redirect()->back()->with('success', 'Ingreso eliminado');
+        abort_if($ingreso->user_id !== auth()->id(), 403);
+        $mes  = request('mes');
+        $anio = request('anio');
+        $ingreso->delete();
+        $params = array_filter(['mes' => $mes, 'anio' => $anio]);
+        return redirect()->route('ingresos.index', $params)->with('success', 'Ingreso eliminado');
     }
 
-    public function edit(Ingreso $ingreso)
+    public function edit(Request $request, Ingreso $ingreso)
     {
         if ($ingreso->user_id !== auth()->id()) abort(403);
         $fuentes = FuenteIngreso::where('user_id', auth()->id())->get();
-        return view('ingresos.edit', compact('ingreso', 'fuentes'));
+        $mes  = $request->get('mes',  \Carbon\Carbon::parse($ingreso->fecha)->month);
+        $anio = $request->get('anio', \Carbon\Carbon::parse($ingreso->fecha)->year);
+        return view('ingresos.edit', compact('ingreso', 'fuentes', 'mes', 'anio'));
     }
 }

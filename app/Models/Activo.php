@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Activo extends Model
 {
-    protected $fillable = ['user_id', 'ticker', 'nombre', 'sector', 'mercado'];
+    protected $fillable = ['user_id', 'ticker', 'nombre', 'sector', 'mercado', 'moneda'];
 
     public function user()
     {

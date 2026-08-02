@@ -149,7 +149,9 @@
                                     </td>
                                     <td class="px-4 py-3 font-medium text-gray-900">{{ $ingreso->descripcion }}</td>
                                     <td class="px-4 py-3">
-                                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
+                                        @php $color = $ingreso->fuenteIngreso->color ?? '#3B82F6'; @endphp
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold text-white"
+                                              style="background-color: {{ $color }}">
                                             {{ $ingreso->fuenteIngreso->nombre ?? 'N/A' }}
                                         </span>
                                     </td>
@@ -158,7 +160,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-center">
                                         <div class="flex justify-center items-center space-x-3">
-                                            <a href="{{ route('ingresos.edit', $ingreso) }}" class="text-indigo-600 hover:text-indigo-900">
+                                            <a href="{{ route('ingresos.edit', [$ingreso, 'mes' => $mes, 'anio' => $anio]) }}" class="text-indigo-600 hover:text-indigo-900">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                 </svg>
@@ -166,6 +168,8 @@
                                             <form action="{{ route('ingresos.destroy', $ingreso) }}" method="POST" onsubmit="return confirm('¿Eliminar este ingreso?')">
                                                 @csrf
                                                 @method('DELETE')
+                                                <input type="hidden" name="mes"  value="{{ $mes }}">
+                                                <input type="hidden" name="anio" value="{{ $anio }}">
                                                 <button type="submit" class="text-red-400 hover:text-red-600 transition">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -211,7 +215,7 @@
                     labels: datos.map(item => item.fuente_nombre),
                     datasets: [{
                         data: datos.map(item => item.total),
-                        backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6'],
+                        backgroundColor: datos.map(item => item.fuente_color || '#10B981'),
                         borderWidth: 2,
                         borderColor: '#ffffff'
                     }]

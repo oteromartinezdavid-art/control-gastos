@@ -1,4 +1,10 @@
 <x-guest-layout>
+    @if(request('restored'))
+        <div class="mb-4 bg-emerald-50 border border-emerald-300 text-emerald-800 px-4 py-3 rounded-lg text-sm font-medium">
+            Base de datos restaurada correctamente. Inicia sesión para continuar.
+        </div>
+    @endif
+
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 

@@ -7,6 +7,7 @@ use App\Models\CategoriaGasto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class GastoController extends Controller
@@ -91,7 +92,7 @@ class GastoController extends Controller
         $request->validate([
             'descripcion' => 'required|string|max:255',
             'monto' => 'required|numeric',
-            'categoria_id' => 'required|exists:categoria_gastos,id',
+            'categoria_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
             'fecha' => 'required|date',
         ]);
 
@@ -109,11 +110,13 @@ class GastoController extends Controller
     }
 
     // Los métodos edit, update y destroy se mantienen igual...
-    public function edit(Gasto $gasto)
+    public function edit(Request $request, Gasto $gasto)
     {
         if ($gasto->user_id !== auth()->id()) abort(403);
         $categorias = CategoriaGasto::where('user_id', auth()->id())->get();
-        return view('gastos.edit', compact('gasto', 'categorias'));
+        $mes  = $request->get('mes',  \Carbon\Carbon::parse($gasto->fecha)->month);
+        $anio = $request->get('anio', \Carbon\Carbon::parse($gasto->fecha)->year);
+        return view('gastos.edit', compact('gasto', 'categorias', 'mes', 'anio'));
     }
 
     public function update(Request $request, Gasto $gasto)
@@ -123,21 +126,25 @@ class GastoController extends Controller
         $validated = $request->validate([
             'descripcion' => 'required|string|max:255',
             'monto' => 'required|numeric',
-            'categoria_id' => 'required|exists:categoria_gastos,id',
+            'categoria_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
             'fecha' => 'required|date',
         ]);
 
-        // Al actualizar, recalculamos el hash para que siga siendo único
         $validated['hash'] = md5($request->fecha . strtoupper(trim($request->descripcion)) . round((float)$request->monto, 2) . auth()->id());
 
         $gasto->update($validated);
-        return redirect()->route('gastos.index')->with('success', 'Gasto actualizado correctamente.');
+
+        $params = array_filter(['mes' => $request->_mes, 'anio' => $request->_anio]);
+        return redirect()->route('gastos.index', $params)->with('success', 'Gasto actualizado correctamente.');
     }
 
     public function destroy(Gasto $gasto)
     {
-        if ($gasto->user_id !== Auth::id()) abort(403);
+        if ($gasto->user_id !== auth()->id()) abort(403);
+        $mes  = request('mes');
+        $anio = request('anio');
         $gasto->delete();
-        return redirect()->route('gastos.index')->with('success', 'Gasto eliminado');
+        $params = array_filter(['mes' => $mes, 'anio' => $anio]);
+        return redirect()->route('gastos.index', $params)->with('success', 'Gasto eliminado');
     }
 }

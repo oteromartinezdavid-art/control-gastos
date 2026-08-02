@@ -127,6 +127,22 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="fecha_inicio" value="Fecha Inicio" />
+                                <x-text-input id="fecha_inicio" name="fecha_inicio" type="date"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('fecha_inicio', now()->format('Y-m-d')) }}" required />
+                                <p class="text-xs text-gray-400 mt-1">Desde cuándo pagas este gasto</p>
+                            </div>
+                            <div>
+                                <x-input-label for="fecha_fin" value="Fecha Fin (opcional)" />
+                                <x-text-input id="fecha_fin" name="fecha_fin" type="date"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('fecha_fin') }}" />
+                                <p class="text-xs text-gray-400 mt-1">Dejar vacío si sigue activo</p>
+                            </div>
+                        </div>
                         <x-primary-button class="w-full justify-center py-3">
                             Añadir a la lista
                         </x-primary-button>
@@ -162,6 +178,11 @@
                                             Cobrado el {{ \Carbon\Carbon::parse($item->fecha_pago_real)->format('d/m') }}
                                         </span>
                                     @endif
+                                    @if($item->dado_de_baja)
+                                        <span class="text-[10px] text-red-500 font-bold uppercase block">
+                                            Baja: {{ $item->fecha_fin->format('d/m/Y') }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4">
                                     <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
@@ -194,11 +215,23 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
                                         </a>
+                                        @if(!$item->dado_de_baja)
+                                        <form action="{{ route('gastos-fijos.dar-de-baja', $item->id) }}" method="POST"
+                                              onsubmit="return confirm('¿Dar de baja «{{ $item->nombre }}»? El histórico se conservará.')">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="text-orange-500 hover:text-orange-700 transition" title="Dar de baja (conserva histórico)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                        @endif
                                         <form action="{{ route('gastos-fijos.destroy', $item->id) }}" method="POST"
-                                              onsubmit="return confirm('¿Eliminar el gasto fijo «{{ $item->nombre }}»?')">
+                                              onsubmit="return confirm('¿Eliminar DEFINITIVAMENTE «{{ $item->nombre }}»? Se borrará todo el histórico.')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-red-500 hover:text-red-700 transition" title="Eliminar">
+                                            <button type="submit" class="text-red-500 hover:text-red-700 transition" title="Eliminar definitivamente">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
