@@ -19,6 +19,8 @@ use App\Http\Controllers\OperacionInversionController;
 use App\Http\Controllers\DividendoController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\PresupuestoController;
+use App\Http\Controllers\WatchlistController;
+use App\Http\Controllers\ConfiguracionController;
 use Illuminate\Http\Request;
 
 Route::get('/', function () {
@@ -90,6 +92,21 @@ Route::middleware('auth')->group(function () {
 
     // Resumen Anual Inversiones
     Route::get('/inversiones/resumen-anual', [ResumenAnualInversionController::class, 'index'])->name('inversiones.resumen-anual');
+
+    // Agente Fiduciario
+    Route::prefix('agente-fiduciario')->name('agente-fiduciario.')->group(function () {
+        Route::get('/vigilancia', [WatchlistController::class, 'index'])->name('vigilancia');
+        Route::post('/vigilancia', [WatchlistController::class, 'store'])->name('vigilancia.store');
+        Route::post('/vigilancia/refrescar', [WatchlistController::class, 'refrescar'])->name('vigilancia.refrescar');
+        Route::put('/vigilancia/{watchlist}', [WatchlistController::class, 'update'])->name('vigilancia.update');
+        Route::delete('/vigilancia/{watchlist}', [WatchlistController::class, 'destroy'])->name('vigilancia.destroy');
+    });
+
+    // Configuración (API keys)
+    Route::get('/configuracion', [ConfiguracionController::class, 'edit'])->name('configuracion.index');
+    Route::put('/configuracion', [ConfiguracionController::class, 'update'])->name('configuracion.update');
+    Route::delete('/configuracion/finnhub', [ConfiguracionController::class, 'destroyFinnhub'])->name('configuracion.finnhub.destroy');
+    Route::post('/configuracion/finnhub/probar', [ConfiguracionController::class, 'probarFinnhub'])->name('configuracion.finnhub.probar');
 
     // Presupuesto
     Route::get('/presupuesto', [PresupuestoController::class, 'index'])->name('presupuesto.index');

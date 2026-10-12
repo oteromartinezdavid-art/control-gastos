@@ -76,11 +76,32 @@
                         </x-slot>
                     </x-dropdown>
 
+                    {{-- Agente Fiduciario dropdown --}}
+                    <x-dropdown align="left" width="48" contentClasses="py-1 bg-[#1e1b4b] border border-indigo-700">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none
+                                {{ request()->routeIs('agente-fiduciario.*')
+                                    ? 'border-indigo-300 text-white'
+                                    : 'border-transparent text-indigo-200 hover:text-white hover:border-indigo-300' }}">
+                                Agente Fiduciario
+                                <svg class="ms-1 h-4 w-4 fill-current" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <a href="{{ route('agente-fiduciario.vigilancia') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Vigilancia</a>
+                            <span class="block px-4 py-2 text-sm font-medium text-indigo-400 cursor-not-allowed">Análisis IA <span class="text-[10px] uppercase">pronto</span></span>
+                            <span class="block px-4 py-2 text-sm font-medium text-indigo-400 cursor-not-allowed">Recomendaciones <span class="text-[10px] uppercase">pronto</span></span>
+                            <span class="block px-4 py-2 text-sm font-medium text-indigo-400 cursor-not-allowed">Diversificación <span class="text-[10px] uppercase">pronto</span></span>
+                        </x-slot>
+                    </x-dropdown>
+
                     {{-- Configuración dropdown --}}
                     <x-dropdown align="left" width="48" contentClasses="py-1 bg-[#1e1b4b] border border-indigo-700">
                         <x-slot name="trigger">
                             <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none
-                                {{ request()->routeIs('categorias.*') || request()->routeIs('fuentes.*') || request()->routeIs('reglas.*') || request()->routeIs('reglas-ingresos.*')
+                                {{ request()->routeIs('categorias.*') || request()->routeIs('fuentes.*') || request()->routeIs('reglas.*') || request()->routeIs('reglas-ingresos.*') || request()->routeIs('configuracion.*')
                                     ? 'border-indigo-300 text-white'
                                     : 'border-transparent text-indigo-200 hover:text-white hover:border-indigo-300' }}">
                                 Configuración
@@ -95,6 +116,7 @@
                             <a href="{{ route('reglas.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Reglas Importación Gastos</a>
                             <a href="{{ route('reglas-ingresos.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Reglas Importación Ingresos</a>
                             <hr class="border-indigo-700 my-1">
+                            <a href="{{ route('configuracion.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Claves API</a>
                             <a href="{{ route('backup.index') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Copias de Seguridad</a>
                         </x-slot>
                     </x-dropdown>

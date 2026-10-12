@@ -80,8 +80,14 @@ class FinanciacionController extends Controller
             'cuota_mensual'      => 'required|numeric|min:0',
             'cuotas_pendientes'  => 'required|integer|min:1',
             'dia_cobro'          => 'required|integer|between:1,31',
+            'fecha_inicio'       => 'required|date',
+            'fecha_fin'          => 'nullable|date|after_or_equal:fecha_inicio',
             'categoria_gasto_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
         ]);
+
+        // Fecha fin estimada si no se indica: inicio + cuotas pendientes (meses)
+        $fechaFin = $request->fecha_fin
+            ?: Carbon::parse($request->fecha_inicio)->addMonths((int) $request->cuotas_pendientes)->toDateString();
 
         Financiacion::create([
             'user_id'            => auth()->id(),
@@ -90,6 +96,8 @@ class FinanciacionController extends Controller
             'cuota_mensual'      => $request->cuota_mensual,
             'cuotas_pendientes'  => $request->cuotas_pendientes,
             'dia_cobro'          => $request->dia_cobro,
+            'fecha_inicio'       => $request->fecha_inicio,
+            'fecha_fin'          => $fechaFin,
             'categoria_gasto_id' => $request->categoria_gasto_id,
         ]);
 
@@ -115,6 +123,8 @@ class FinanciacionController extends Controller
             'cuota_mensual'      => 'required|numeric|min:0',
             'cuotas_pendientes'  => 'required|integer|min:0',
             'dia_cobro'          => 'required|integer|between:1,31',
+            'fecha_inicio'       => 'required|date',
+            'fecha_fin'          => 'nullable|date|after_or_equal:fecha_inicio',
             'categoria_gasto_id' => ['required', Rule::exists('categoria_gastos', 'id')->where('user_id', auth()->id())],
         ]);
 
@@ -124,8 +134,28 @@ class FinanciacionController extends Controller
             'cuota_mensual'      => $request->cuota_mensual,
             'cuotas_pendientes'  => $request->cuotas_pendientes,
             'dia_cobro'          => $request->dia_cobro,
+            'fecha_inicio'       => $request->fecha_inicio,
+            'fecha_fin'          => $request->fecha_fin,
             'categoria_gasto_id' => $request->categoria_gasto_id,
         ]);
+
+        // Reconstruir snapshot: los pagos en ventana hasta hoy se consideran ya
+        // reflejados en las cuotas_pendientes que ha indicado el usuario, así que
+        // se marcan como procesados sin volver a decrementar. Solo meses futuros
+        // nuevos descontarán cuota en sincronizarCuotas().
+        $query = Gasto::where('user_id', auth()->id())
+            ->whereRaw('LOWER(descripcion) LIKE ?', ['%' . strtolower($financiacion->nombre) . '%'])
+            ->whereDate('fecha', '>=', $financiacion->fecha_inicio)
+            ->whereDate('fecha', '<=', now());
+
+        if ($financiacion->fecha_fin) {
+            $query->whereDate('fecha', '<=', $financiacion->fecha_fin);
+        }
+
+        $financiacion->meses_procesados = $query->get()
+            ->map(fn($g) => Carbon::parse($g->fecha)->format('Y-m'))
+            ->unique()->values()->toArray();
+        $financiacion->save();
 
         return redirect()->route('financiaciones.index')->with('success', 'Financiación actualizada correctamente.');
     }
@@ -153,9 +183,18 @@ class FinanciacionController extends Controller
         foreach ($todas as $fin) {
             if ($fin->cuotas_pendientes <= 0) continue;
 
-            $mesesConPago = Gasto::where('user_id', $userId)
-                ->whereRaw('LOWER(descripcion) LIKE ?', ['%' . strtolower($fin->nombre) . '%'])
-                ->get()
+            $query = Gasto::where('user_id', $userId)
+                ->whereRaw('LOWER(descripcion) LIKE ?', ['%' . strtolower($fin->nombre) . '%']);
+
+            // Solo contar pagos a partir de la fecha de inicio de la financiación
+            if ($fin->fecha_inicio) {
+                $query->whereDate('fecha', '>=', $fin->fecha_inicio);
+            }
+            if ($fin->fecha_fin) {
+                $query->whereDate('fecha', '<=', $fin->fecha_fin);
+            }
+
+            $mesesConPago = $query->get()
                 ->map(fn($g) => Carbon::parse($g->fecha)->format('Y-m'))
                 ->unique()
                 ->values()

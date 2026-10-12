@@ -98,6 +98,20 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="fecha_inicio" value="Fecha Inicio" />
+                                <x-text-input id="fecha_inicio" name="fecha_inicio" type="date"
+                                    class="mt-1 block w-full" value="{{ old('fecha_inicio', now()->toDateString()) }}" required />
+                                <p class="text-[10px] text-gray-400 mt-1">Solo cuenta pagos desde esta fecha</p>
+                            </div>
+                            <div>
+                                <x-input-label for="fecha_fin" value="Fecha Fin (opcional)" />
+                                <x-text-input id="fecha_fin" name="fecha_fin" type="date"
+                                    class="mt-1 block w-full" value="{{ old('fecha_fin') }}" />
+                                <p class="text-[10px] text-gray-400 mt-1">Si vacía, se estima con las cuotas</p>
+                            </div>
+                        </div>
                         <x-primary-button class="w-full justify-center py-3">
                             Añadir Financiación
                         </x-primary-button>

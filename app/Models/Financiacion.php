@@ -16,11 +16,15 @@ class Financiacion extends Model
         'cuota_mensual',
         'cuotas_pendientes',
         'dia_cobro',
+        'fecha_inicio',
+        'fecha_fin',
         'meses_procesados',
     ];
 
     protected $casts = [
         'meses_procesados' => 'array',
+        'fecha_inicio'     => 'date',
+        'fecha_fin'        => 'date',
     ];
 
     public function user()
