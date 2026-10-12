@@ -63,6 +63,56 @@
                 @endif
             </div>
 
+            {{-- Claude (IA Agente Fiduciario) --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-gray-800">Claude (IA del Agente Fiduciario)</h3>
+                    @if($tieneClaude)
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase">Configurada</span>
+                    @else
+                        <span class="px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase">Sin configurar</span>
+                    @endif
+                </div>
+
+                <p class="text-sm text-gray-500">
+                    Clave de la API de Anthropic para los agentes de análisis de inversión.
+                    Consíguela en <a href="https://console.anthropic.com" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">console.anthropic.com</a>.
+                </p>
+
+                @if($tieneClaude)
+                    <div class="text-sm text-gray-600 font-mono bg-gray-50 rounded px-3 py-2">{{ $claudeKeyMask }}</div>
+                @endif
+
+                <form action="{{ route('configuracion.update') }}" method="POST" class="space-y-3">
+                    @csrf @method('PUT')
+                    <div>
+                        <x-input-label for="claude_api_key" :value="$tieneClaude ? 'Nueva clave (deja en blanco para no cambiar)' : 'API Key'" />
+                        <x-text-input id="claude_api_key" name="claude_api_key" type="password" autocomplete="off"
+                            class="mt-1 block w-full font-mono" placeholder="sk-ant-..." />
+                        <x-input-error :messages="$errors->get('claude_api_key')" class="mt-2" />
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <x-primary-button>Guardar</x-primary-button>
+                        @if($tieneClaude)
+                            <button form="probar-claude" class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-200 transition">
+                                Probar conexión
+                            </button>
+                        @endif
+                    </div>
+                </form>
+
+                @if($tieneClaude)
+                    <div class="flex items-center gap-3 pt-2 border-t border-gray-100">
+                        <form id="probar-claude" action="{{ route('configuracion.claude.probar') }}" method="POST">@csrf</form>
+                        <form action="{{ route('configuracion.claude.destroy') }}" method="POST"
+                              onsubmit="return confirm('¿Eliminar la API key de Claude?')">
+                            @csrf @method('DELETE')
+                            <button class="text-sm text-red-500 hover:text-red-700 font-medium">Eliminar clave</button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+
         </div>
     </div>
 </x-app-layout>

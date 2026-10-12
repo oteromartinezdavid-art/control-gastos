@@ -5,17 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Configuracion;
 use App\Services\MarketData\MarketDataProvider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class ConfiguracionController extends Controller
 {
     public function edit()
     {
         $userId = auth()->id();
-        $apiKey = Configuracion::obtener($userId, 'finnhub_api_key');
 
         return view('configuracion.index', [
-            'finnhubKeyMask' => $this->enmascarar($apiKey),
-            'tieneFinnhub'   => (bool) $apiKey,
+            'finnhubKeyMask' => $this->enmascarar(Configuracion::obtener($userId, 'finnhub_api_key')),
+            'tieneFinnhub'   => (bool) Configuracion::obtener($userId, 'finnhub_api_key'),
+            'claudeKeyMask'  => $this->enmascarar(Configuracion::obtener($userId, 'claude_api_key')),
+            'tieneClaude'    => (bool) Configuracion::obtener($userId, 'claude_api_key'),
         ]);
     }
 
@@ -23,23 +25,65 @@ class ConfiguracionController extends Controller
     {
         $request->validate([
             'finnhub_api_key' => 'nullable|string|max:255',
+            'claude_api_key'  => 'nullable|string|max:255',
         ]);
 
         $userId = auth()->id();
+        $guardadas = [];
 
         // Solo guarda si el usuario escribió algo (no borra al dejar en blanco)
         if ($request->filled('finnhub_api_key')) {
             Configuracion::guardar($userId, 'finnhub_api_key', trim($request->finnhub_api_key));
-            return back()->with('success', 'API key de Finnhub guardada.');
+            $guardadas[] = 'Finnhub';
+        }
+        if ($request->filled('claude_api_key')) {
+            Configuracion::guardar($userId, 'claude_api_key', trim($request->claude_api_key));
+            $guardadas[] = 'Claude';
         }
 
-        return back()->with('success', 'Sin cambios.');
+        return back()->with('success', $guardadas
+            ? 'API key de ' . implode(' y ', $guardadas) . ' guardada.'
+            : 'Sin cambios.');
     }
 
     public function destroyFinnhub()
     {
         Configuracion::where('user_id', auth()->id())->where('clave', 'finnhub_api_key')->delete();
         return back()->with('success', 'API key de Finnhub eliminada.');
+    }
+
+    public function destroyClaude()
+    {
+        Configuracion::where('user_id', auth()->id())->where('clave', 'claude_api_key')->delete();
+        return back()->with('success', 'API key de Claude eliminada.');
+    }
+
+    /** Prueba la API key de Claude contra la API de Anthropic (listado de modelos). */
+    public function probarClaude()
+    {
+        $key = Configuracion::obtener(auth()->id(), 'claude_api_key');
+        if (!$key) {
+            return back()->with('error', 'No hay API key de Claude configurada.');
+        }
+
+        try {
+            $resp = Http::timeout(15)->withHeaders([
+                'x-api-key'         => $key,
+                'anthropic-version' => '2023-06-01',
+            ])->get('https://api.anthropic.com/v1/models');
+
+            if ($resp->status() === 401) {
+                return back()->with('error', 'API key de Claude inválida (401).');
+            }
+            if ($resp->failed()) {
+                return back()->with('error', 'Error al contactar con Anthropic (HTTP ' . $resp->status() . ').');
+            }
+
+            $n = count($resp->json('data') ?? []);
+            return back()->with('success', "Conexión OK con Claude ({$n} modelos disponibles).");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'No se pudo conectar con Anthropic: ' . $e->getMessage());
+        }
     }
 
     /** Prueba la API key guardada contra el proveedor con un ticker conocido. */

@@ -107,6 +107,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/configuracion', [ConfiguracionController::class, 'update'])->name('configuracion.update');
     Route::delete('/configuracion/finnhub', [ConfiguracionController::class, 'destroyFinnhub'])->name('configuracion.finnhub.destroy');
     Route::post('/configuracion/finnhub/probar', [ConfiguracionController::class, 'probarFinnhub'])->name('configuracion.finnhub.probar');
+    Route::delete('/configuracion/claude', [ConfiguracionController::class, 'destroyClaude'])->name('configuracion.claude.destroy');
+    Route::post('/configuracion/claude/probar', [ConfiguracionController::class, 'probarClaude'])->name('configuracion.claude.probar');
 
     // Presupuesto
     Route::get('/presupuesto', [PresupuestoController::class, 'index'])->name('presupuesto.index');
