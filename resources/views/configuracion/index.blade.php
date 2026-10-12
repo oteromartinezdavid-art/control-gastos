@@ -101,6 +101,24 @@
                     </div>
                 </form>
 
+                {{-- Modelo IA --}}
+                <form action="{{ route('configuracion.update') }}" method="POST" class="pt-3 border-t border-gray-100 space-y-2">
+                    @csrf @method('PUT')
+                    <x-input-label for="claude_model" value="Modelo del Agente Fiduciario" />
+                    <div class="flex items-center gap-3">
+                        <select name="claude_model" id="claude_model"
+                            class="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                            @foreach($modelos as $id => $info)
+                                <option value="{{ $id }}" {{ $modeloActual === $id ? 'selected' : '' }}>
+                                    {{ $info['label'] }} — ${{ $info['in'] }}/${{ $info['out'] }} por M tokens
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-primary-button>Guardar</x-primary-button>
+                    </div>
+                    <p class="text-[11px] text-gray-400">Modelo usado por los agentes de análisis. Opus = mejor razonamiento, Haiku = más barato.</p>
+                </form>
+
                 @if($tieneClaude)
                     <div class="flex items-center gap-3 pt-2 border-t border-gray-100">
                         <form id="probar-claude" action="{{ route('configuracion.claude.probar') }}" method="POST">@csrf</form>

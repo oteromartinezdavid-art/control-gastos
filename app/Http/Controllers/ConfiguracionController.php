@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Configuracion;
 use App\Services\MarketData\MarketDataProvider;
+use App\Services\IA\ClaudeClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 
 class ConfiguracionController extends Controller
 {
@@ -18,6 +20,8 @@ class ConfiguracionController extends Controller
             'tieneFinnhub'   => (bool) Configuracion::obtener($userId, 'finnhub_api_key'),
             'claudeKeyMask'  => $this->enmascarar(Configuracion::obtener($userId, 'claude_api_key')),
             'tieneClaude'    => (bool) Configuracion::obtener($userId, 'claude_api_key'),
+            'modelos'        => ClaudeClient::MODELOS,
+            'modeloActual'   => (new ClaudeClient($userId))->modelo(),
         ]);
     }
 
@@ -26,6 +30,7 @@ class ConfiguracionController extends Controller
         $request->validate([
             'finnhub_api_key' => 'nullable|string|max:255',
             'claude_api_key'  => 'nullable|string|max:255',
+            'claude_model'    => ['nullable', Rule::in(array_keys(ClaudeClient::MODELOS))],
         ]);
 
         $userId = auth()->id();
@@ -40,9 +45,13 @@ class ConfiguracionController extends Controller
             Configuracion::guardar($userId, 'claude_api_key', trim($request->claude_api_key));
             $guardadas[] = 'Claude';
         }
+        if ($request->filled('claude_model')) {
+            Configuracion::guardar($userId, 'claude_model', $request->claude_model);
+            $guardadas[] = 'modelo IA';
+        }
 
         return back()->with('success', $guardadas
-            ? 'API key de ' . implode(' y ', $guardadas) . ' guardada.'
+            ? 'Guardado: ' . implode(', ', $guardadas) . '.'
             : 'Sin cambios.');
     }
 

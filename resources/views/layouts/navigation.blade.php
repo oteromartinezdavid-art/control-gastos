@@ -91,7 +91,7 @@
                         </x-slot>
                         <x-slot name="content">
                             <a href="{{ route('agente-fiduciario.vigilancia') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Vigilancia</a>
-                            <span class="block px-4 py-2 text-sm font-medium text-indigo-400 cursor-not-allowed">Análisis IA <span class="text-[10px] uppercase">pronto</span></span>
+                            <a href="{{ route('agente-fiduciario.analisis') }}" class="block px-4 py-2 text-sm font-medium text-indigo-100 hover:bg-indigo-700 hover:text-white transition duration-150 ease-in-out">Análisis IA</a>
                             <span class="block px-4 py-2 text-sm font-medium text-indigo-400 cursor-not-allowed">Recomendaciones <span class="text-[10px] uppercase">pronto</span></span>
                             <span class="block px-4 py-2 text-sm font-medium text-indigo-400 cursor-not-allowed">Diversificación <span class="text-[10px] uppercase">pronto</span></span>
                         </x-slot>

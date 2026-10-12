@@ -21,6 +21,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\AnalisisController;
 use Illuminate\Http\Request;
 
 Route::get('/', function () {
@@ -100,6 +101,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/vigilancia/refrescar', [WatchlistController::class, 'refrescar'])->name('vigilancia.refrescar');
         Route::put('/vigilancia/{watchlist}', [WatchlistController::class, 'update'])->name('vigilancia.update');
         Route::delete('/vigilancia/{watchlist}', [WatchlistController::class, 'destroy'])->name('vigilancia.destroy');
+
+        // Análisis IA (Agente Analista)
+        Route::get('/analisis', [AnalisisController::class, 'index'])->name('analisis');
+        Route::post('/analisis/{watchlist}', [AnalisisController::class, 'analizar'])->name('analisis.analizar');
     });
 
     // Configuración (API keys)
